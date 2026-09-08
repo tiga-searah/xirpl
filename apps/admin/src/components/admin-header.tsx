@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@xirpl/shared/components/ui/dropdown-menu';
 import { SITE_NAME } from '@xirpl/shared/constants';
-import { cn, revealTheme } from '@xirpl/shared/utils';
+import { cn } from '@xirpl/shared/utils';
+import { revealTheme } from '@xirpl/shared/theme-transition';
 import { AlignLeftIcon, LogOut, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';

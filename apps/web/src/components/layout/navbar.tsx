@@ -4,7 +4,7 @@ import type { UserModel } from '@be/modules/user/model';
 
 type IProfile = UserModel['User'];
 import { SITE_NAME } from '@xirpl/shared';
-import { revealTheme } from '@xirpl/shared/utils';
+import { revealTheme } from '@xirpl/shared/theme-transition';
 import {
   AlignLeftIcon,
   FlameIcon,

@@ -1,6 +1,6 @@
 'use client';
 
-import api from '@fe/lib/api';
+import api, { API_URL } from '@fe/lib/api';
 import { useUser } from '@fe/hooks/use-user';
 import {
   LockIcon,
@@ -44,16 +44,48 @@ import { HabitCalendar, HabitStats } from './widgets';
 const MAX_PHOTO = 5 * 1024 * 1024;
 const SAVE_DELAY = 500;
 
-// Upload proof to S3 and return its filename; the server compresses.
-async function uploadPhoto(file: File) {
-  if (!file.type.startsWith('image/'))
-    throw new Error('File harus berupa gambar.');
-  if (file.size > MAX_PHOTO) throw new Error('Ukuran foto maksimal 5MB.');
+export type UploadProgress = { field: string; sent: number; total: number };
 
-  const { data } = await api.s3.upload.post({ file });
-  const filename = data?.data?.filename;
-  if (!filename) throw new Error('Gagal mengunggah foto. Coba lagi.');
-  return filename;
+// Upload proof to S3 and return its filename; the server compresses.
+// XHR, not fetch: only XHR reports upload.onprogress for the percentage.
+function uploadPhoto(file: File, onProgress: (sent: number) => void) {
+  if (!file.type.startsWith('image/'))
+    return Promise.reject(new Error('File harus berupa gambar.'));
+  if (file.size > MAX_PHOTO)
+    return Promise.reject(new Error('Ukuran foto maksimal 5MB.'));
+
+  return new Promise<string>((resolve, reject) => {
+    const fail = () => reject(new Error('Gagal mengunggah foto. Coba lagi.'));
+    const form = new FormData();
+    form.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/s3/upload`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded);
+    xhr.onload = () => {
+      // Token expired mid-upload: retry through the eden client, which refreshes.
+      if (xhr.status === 401) {
+        api.s3.upload
+          .post({ file })
+          .then(({ data }) => {
+            const name = data?.data?.filename;
+            if (name) resolve(name);
+            else fail();
+          })
+          .catch(fail);
+        return;
+      }
+      try {
+        const name = JSON.parse(xhr.responseText)?.data?.filename;
+        if (xhr.status === 201 && name) resolve(name);
+        else fail();
+      } catch {
+        fail();
+      }
+    };
+    xhr.onerror = fail;
+    xhr.send(form);
+  });
 }
 
 // Delete proofs the journal no longer references, so files don't pile up in S3.
@@ -84,6 +116,7 @@ export default function HabitJournal() {
   const [month, setMonth] = useState(() => new Date());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState<UploadProgress | null>(null);
   const [version, setVersion] = useState(0);
   const [now, setNow] = useState(() => new Date());
   const [journalLoading, setJournalLoading] = useState(true);
@@ -242,17 +275,22 @@ export default function HabitJournal() {
 
   const pickPhoto = async (
     file: File | undefined,
+    field: string,
     apply: (prev: Journal, filename: string) => Journal,
   ) => {
     if (!file) return;
     setBusy(true);
+    setUploading({ field, sent: 0, total: file.size });
     try {
-      const filename = await uploadPhoto(file);
+      const filename = await uploadPhoto(file, (sent) =>
+        setUploading({ field, sent, total: file.size }),
+      );
       update((prev) => apply(prev, filename));
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setUploading(null);
     }
   };
 
@@ -344,6 +382,7 @@ export default function HabitJournal() {
               data={data}
               editable={editable}
               busy={busy}
+              uploading={uploading}
               reduce={reduce}
               selected={selected}
               now={now}

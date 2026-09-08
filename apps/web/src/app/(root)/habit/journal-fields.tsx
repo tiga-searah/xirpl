@@ -9,6 +9,7 @@ import {
   CheckIcon,
   ClockIcon,
   DumbbellIcon,
+  LoaderCircleIcon,
   LockIcon,
   MoonStarIcon,
   NotebookPenIcon,
@@ -18,6 +19,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'motion/react';
 import type { ReactNode } from 'react';
+import type { UploadProgress } from './journal';
 import { type Journal, type Check, type ModuleKey } from '../../../../data/habit-data';
 import {
   IBADAH,
@@ -133,10 +135,18 @@ function Section({
   );
 }
 
+const formatBytes = (n: number) =>
+  n >= 1024 ** 2
+    ? `${(n / 1024 ** 2).toFixed(1)} MB`
+    : n >= 1024
+      ? `${Math.round(n / 1024)} KB`
+      : `${n} B`;
+
 function PhotoBox({
   label,
   photo,
   disabled,
+  uploading,
   lockedHint,
   onPick,
   onClear,
@@ -144,10 +154,14 @@ function PhotoBox({
   label: string;
   photo: string | null;
   disabled: boolean;
+  uploading?: UploadProgress | null;
   lockedHint?: string;
   onPick: (file: File | undefined) => void;
   onClear: () => void;
 }) {
+  const pct = uploading
+    ? Math.min(99, Math.round((uploading.sent / uploading.total) * 100))
+    : 0;
   return (
     <div className="flex flex-col gap-2">
       <span className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-foreground">
@@ -188,6 +202,27 @@ function PhotoBox({
               alt={label}
               className="absolute inset-0 size-full object-contain"
             />
+          ) : uploading ? (
+            <>
+              <LoaderCircleIcon className="mb-2 size-6 animate-spin text-muted-foreground" />
+              <p className="mb-1.5 text-sm font-semibold text-muted-foreground">
+                {pct}%
+              </p>
+              <div className="h-1.5 w-2/3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-foreground transition-[width] duration-200"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {formatBytes(uploading.sent)} / {formatBytes(uploading.total)}
+              </p>
+              {uploading.sent >= uploading.total && (
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                  Sedang dikompres…
+                </p>
+              )}
+            </>
           ) : (
             <>
               {lockedHint ? (
@@ -310,6 +345,7 @@ export function JournalFields({
   data,
   editable,
   busy,
+  uploading,
   reduce,
   selected,
   now,
@@ -322,6 +358,7 @@ export function JournalFields({
   data: Journal;
   editable: boolean;
   busy: boolean;
+  uploading: UploadProgress | null;
   reduce: boolean | null;
   selected: Date;
   now: Date;
@@ -330,6 +367,7 @@ export function JournalFields({
   update: (fn: (prev: Journal) => Journal) => void;
   pickPhoto: (
     file: File | undefined,
+    field: string,
     apply: (prev: Journal, filename: string) => Journal,
   ) => Promise<void>;
   checkIn: () => void;
@@ -530,8 +568,9 @@ export function JournalFields({
                 label="Mana bukti olahragamu?"
                 photo={data.sport_proof_url}
                 disabled={!editable || busy}
+                uploading={uploading?.field === 'sport_proof_url' ? uploading : null}
                 onPick={(file) =>
-                  pickPhoto(file, (d, sport_proof_url) => ({
+                  pickPhoto(file, 'sport_proof_url', (d, sport_proof_url) => ({
                     ...d,
                     sport_proof_url,
                   }))
@@ -614,8 +653,11 @@ export function JournalFields({
               label="Mana bukti kamu mulai belajar?"
               photo={data.study_start_proof_url}
               disabled={!editable || busy}
+              uploading={
+                uploading?.field === 'study_start_proof_url' ? uploading : null
+              }
               onPick={(file) =>
-                pickPhoto(file, (d, study_start_proof_url) => ({
+                pickPhoto(file, 'study_start_proof_url', (d, study_start_proof_url) => ({
                   ...d,
                   study_start_proof_url,
                 }))
@@ -633,8 +675,11 @@ export function JournalFields({
               photo={data.study_end_proof_url}
               disabled={!editable || busy || !data.study_start_proof_url}
               lockedHint={data.study_start_proof_url ? undefined : 'Upload bukti mulai dulu'}
+              uploading={
+                uploading?.field === 'study_end_proof_url' ? uploading : null
+              }
               onPick={(file) =>
-                pickPhoto(file, (d, study_end_proof_url) => ({
+                pickPhoto(file, 'study_end_proof_url', (d, study_end_proof_url) => ({
                   ...d,
                   study_end_proof_url,
                 }))

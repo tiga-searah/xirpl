@@ -66,7 +66,8 @@ RUN bunx turbo prune @xirpl/admin --docker --production
 # builder
 FROM oven/bun AS admin-build
 WORKDIR /app
-ARG API_URL=https://api-xirpl.tigasearah.my.id WEB_URL=https://xirpl.tigasearah.my.id
+ARG API_URL=https://api-xirpl.tigasearah.my.id
+ARG WEB_URL=https://xirpl.tigasearah.my.id
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=$API_URL NEXT_PUBLIC_WEB_URL=$WEB_URL
 COPY --from=admin-prune /app/out/json .

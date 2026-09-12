@@ -45,7 +45,10 @@ export function AdminHeader() {
   const initial = (user?.display_name || user?.username)?.charAt(0);
 
   return (
-    <header className="sticky top-0 z-10 border-b-2 border-border bg-background/80 backdrop-blur">
+    <header
+      className="sticky top-0 z-10 border-b-2 border-border bg-background/80 backdrop-blur"
+      style={{ viewTransitionName: 'navbar' }}
+    >
       <div className="mx-auto flex max-w-360 items-center gap-2 px-3 py-2.5 md:px-4">
         {/* Like web NavBar: toggle + brand slide away while sidebar is open. */}
         <div

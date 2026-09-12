@@ -10,11 +10,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { SITE_NAME } from '@xirpl/shared/constants';
 import { cn } from '@xirpl/shared/utils';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -47,8 +49,14 @@ const itemBase =
   'h-11 rounded-2xl border-2 border-transparent text-base font-extrabold';
 
 export function AdminSidebar() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, setOpenMobile } = useSidebar();
   const path = usePathname();
+
+  // Close after navigation commits — closing on click races the route
+  // transition and the sheet re-pops mid-render.
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [path, setOpenMobile]);
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -113,6 +121,12 @@ export function AdminSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarFooter>
+        <p className="text-muted-foreground pb-1 text-center text-[11px] font-semibold tracking-wide">
+          V1.1.0
+        </p>
+      </SidebarFooter>
     </Sidebar>
   );
 }

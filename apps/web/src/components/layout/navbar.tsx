@@ -42,7 +42,10 @@ export default function NavBar() {
   const expanded = sb.isMobile ? sb.openMobile : sb.open;
 
   return (
-    <nav className="bg-background sticky top-0 z-50 h-16 w-full border-b-2">
+    <nav
+      className="bg-background sticky top-0 z-50 h-16 w-full border-b-2"
+      style={{ viewTransitionName: 'navbar' }}
+    >
       <div className="mx-auto flex h-full max-w-360 items-center justify-between gap-2 px-3 md:px-4">
         <m.div
           initial={{ opacity: 0, y: -20 }}

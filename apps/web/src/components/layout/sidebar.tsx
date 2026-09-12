@@ -16,6 +16,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { useUser } from '@fe/hooks/use-user';
 import { Button } from '@xirpl/shared/components/ui/button';
 import {
@@ -84,10 +85,16 @@ const ADMIN_ROLES = [
 ];
 
 export default function AppSidebar() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, setOpenMobile } = useSidebar();
   const path = usePathname();
   const { user } = useUser();
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
+
+  // Close after navigation commits — closing on click races the route
+  // transition and the sheet re-pops mid-render.
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [path, setOpenMobile]);
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -204,7 +211,7 @@ export default function AppSidebar() {
             </a>
           </div>
           <p className="text-muted-foreground mt-1 text-center text-[11px] font-semibold tracking-wide">
-            V2.1.3
+            V2.1.4
           </p>
           <p className="text-muted-foreground mt-1 text-center text-[11px] font-semibold tracking-wide">
             © 2026 TigaSearah

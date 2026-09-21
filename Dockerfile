@@ -39,8 +39,9 @@ RUN bunx turbo prune @xirpl/web --docker --production
 FROM oven/bun AS web-build
 WORKDIR /app
 ARG API_URL=https://api-xirpl.tigasearah.my.id
+ARG ADMIN_URL=https://admin-xirpl.tigasearah.my.id
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_API_URL=$API_URL
+ENV NEXT_PUBLIC_API_URL=$API_URL NEXT_PUBLIC_ADMIN_URL=$ADMIN_URL
 COPY --from=web-prune /app/out/json .
 RUN bun install --frozen-lockfile
 COPY --from=web-prune /app/out/full .

@@ -1,20 +1,12 @@
 'use client';
 
-import api, { API_URL } from '@fe/lib/api';
 import { useUser } from '@fe/hooks/use-user';
-import {
-  LockIcon,
-  TriangleAlertIcon,
-} from 'lucide-react';
-import { motion as m, useReducedMotion } from 'motion/react';
+import api, { API_URL } from '@fe/lib/api';
+import { LockIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { AnimatePresence, motion as m, useReducedMotion } from 'motion/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isAdminRole } from '../../../../data/habit-admin';
 import {
   attendanceCopy,
   attendanceWindow,
@@ -30,10 +22,10 @@ import {
   level,
   levelsByDay,
   moduleStatus,
-  parseDate,
   PROOF_FIELDS,
-  setHolidays,
+  parseDate,
   type StreakData,
+  setHolidays,
   streakForCheckStatus,
   toJournalBody,
 } from '../../../../data/habit-data';
@@ -43,6 +35,7 @@ import { HabitCalendar, HabitStats } from './widgets';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
 const SAVE_DELAY = 500;
+const HABIT_ADMIN_NOTICE_KEY = 'dismissed_habit_admin_notice';
 
 export type UploadProgress = { field: string; sent: number; total: number };
 
@@ -121,6 +114,28 @@ export default function HabitJournal() {
   const [now, setNow] = useState(() => new Date());
   const [journalLoading, setJournalLoading] = useState(true);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
+  const [showAdminNotice, setShowAdminNotice] = useState(false);
+
+  useEffect(() => {
+    try {
+      const isDismissed =
+        localStorage.getItem(HABIT_ADMIN_NOTICE_KEY) === 'true';
+      if (!isDismissed) {
+        setShowAdminNotice(true);
+      }
+    } catch {
+      setShowAdminNotice(true);
+    }
+  }, []);
+
+  const dismissAdminNotice = () => {
+    setShowAdminNotice(false);
+    try {
+      localStorage.setItem(HABIT_ADMIN_NOTICE_KEY, 'true');
+    } catch {
+      // ignore
+    }
+  };
 
   // Public holidays turn weekdays into Bangun Pagi too; fetch this and last
   // year so the streak window (current + previous month) is covered.
@@ -131,10 +146,11 @@ export default function HabitJournal() {
       api.calendar.holidays.get({ query: { year: String(y - 1) } }),
     ])
       .then(([cur, prev]) =>
-        setHolidays([
-          ...(cur.data?.data ?? []),
-          ...(prev.data?.data ?? []),
-        ].map((h) => h.date)),
+        setHolidays(
+          [...(cur.data?.data ?? []), ...(prev.data?.data ?? [])].map(
+            (h) => h.date,
+          ),
+        ),
       )
       .catch(() => {}) // offline: weekends still work
       .finally(() => setHolidaysLoading(false));
@@ -350,6 +366,55 @@ export default function HabitJournal() {
             })}
             {!editable && ' · hanya bisa dibaca'}
           </p>
+
+          <AnimatePresence>
+            {isAdminRole(user?.role) && showAdminNotice && (
+              <m.div
+                initial={
+                  reduce ? false : { opacity: 0, height: 0, marginTop: 0 }
+                }
+                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                exit={
+                  reduce ? undefined : { opacity: 0, height: 0, marginTop: 0 }
+                }
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden"
+              >
+                <aside
+                  aria-label="Pemberitahuan Dashboard Admin"
+                  className="inline-flex w-full sm:w-auto items-center justify-between gap-3 rounded-xl border border-brand-blue/40 bg-pastel-blue/30 px-3.5 py-2 text-sm text-foreground shadow-xs dark:border-blue-500/40 dark:bg-blue-950/40 dark:text-blue-100"
+                >
+                  <p className="leading-snug">
+                    <span className="font-semibold text-brand-navy dark:text-blue-100">
+                      Mencari dashboard admin?
+                    </span>{' '}
+                    <span className="text-slate-600 dark:text-slate-300">
+                      Sekarang admin memiliki halaman webnya tersendiri.{' '}
+                    </span>
+                    <a
+                      href={
+                        process.env.NEXT_PUBLIC_ADMIN_URL
+                          ? `${process.env.NEXT_PUBLIC_ADMIN_URL}/habit`
+                          : 'http://localhost:3620/habit'
+                      }
+                      className="font-bold text-brand-blue underline underline-offset-4 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Klik untuk mengakses
+                    </a>
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={dismissAdminNotice}
+                    aria-label="Tutup pemberitahuan"
+                    className="cursor-pointer ml-1 -mr-0.5 flex size-6 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-black/5 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                </aside>
+              </m.div>
+            )}
+          </AnimatePresence>
         </m.header>
 
         <div className="grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-[1fr_360px]">
@@ -414,4 +479,3 @@ export default function HabitJournal() {
     </div>
   );
 }
-

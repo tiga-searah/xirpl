@@ -22,7 +22,7 @@ const app = new Elysia()
       documentation: {
         info: {
           title: 'XI RPL API Documentation',
-          version: '2.1.0',
+          version: '2.1.1',
           description:
             'XI RPL API is the backend API used for managing the XI RPL system. It is mainly used for https://xirpl.tigasearah.my.id\n' +
             '\n' +

@@ -103,6 +103,27 @@ bun run dev:web      # Web only
 - **Journals** — journal / habit tracking (+ admin), PDF recap export (pdfkit)
 - **Leaderboard** — streak rankings
 - **Storage** — file uploads to S3-compatible storage
+- **Notifications** — authenticated `GET`, `POST`, `PATCH`, `DELETE` at `/notifications/subscriptions`; browser-scoped check-in reminders
+
+## Check-in push reminders
+
+1. Generate persistent VAPID keys with `bunx web-push generate-vapid-keys`.
+2. Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (e.g. `mailto:admin@example.com`) in the API environment. Docker Compose forwards these variables. Keep the private key secret and retain the same key pair across deployments.
+3. Apply the database schema with the existing `bun run db:push` workflow, or generate/apply migrations using your deployment's migration history. This adds `notification_subscriptions`; migration artifacts are ignored by this repository. Review schema changes before applying to production.
+4. Serve the web app over HTTPS (localhost works for development), then enable **Ingatkan check-in pukul 06.45 WIB** on `/habit`. Permission is requested only when enabling. iOS/iPadOS requires installation on the Home Screen.
+
+Reminders run daily at **06:45 WIB (Asia/Jakarta, UTC+7)** while the API process is running. Only enabled subscriptions belonging to users without today's check-in qualify. Database claims prevent duplicate sends across API replicas; disabling preserves the subscription for later reactivation. Expired push endpoints are deleted. `PATCH /notifications/subscriptions` accepts `{ "endpoint": "...", "enabled": false }`, ready for a future settings screen; `GET` takes an optional endpoint and returns its enabled state plus the public VAPID key.
+
+Push delivery is best-effort, not an exact-time alarm. Payloads expire at 06:46 WIB and the worker ignores late delivery. There is no catch-up after downtime or retry after a failed send, avoiding late/duplicate reminders. Existing OS notifications may remain visible after expiration. Missing VAPID configuration disables opt-in but still permits opt-out. Supported push providers: FCM, Mozilla, Apple, and Windows.
+
+Runnable contract check (isolated PostgreSQL database only; apply schema first):
+
+```bash
+NOTIFICATION_CHECK_DATABASE_URL=postgres://user:pass@localhost/test_db \
+  bun apps/api/src/modules/notifications/notifications.check.ts
+```
+
+The check exercises real authenticated routes and database queries, VAPID encryption, and worker event handling; external push transport is simulated.
 
 ## Docker
 

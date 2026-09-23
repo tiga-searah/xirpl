@@ -11,6 +11,7 @@ import { iot } from './modules/iot';
 import { journal } from './modules/journal';
 import { journalAdmin } from './modules/journal/admin';
 import { leaderboard } from './modules/leaderboard';
+import { notifications } from './modules/notifications';
 import { storage } from './modules/storage';
 import { user } from './modules/user';
 
@@ -52,6 +53,9 @@ const app = new Elysia()
           },
           {
             name: 'Calendar',
+          },
+          {
+            name: 'Notifications',
           },
         ],
         components: {
@@ -98,6 +102,7 @@ const app = new Elysia()
     leaderboard,
     storage,
     calendar,
+    notifications,
   ])
   .get('/', ({ redirect }) => redirect('/docs'), { detail: { hide: true } })
   .get('/health', () => ({ success: true, message: 'API is healthy' }), {

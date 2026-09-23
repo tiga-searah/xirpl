@@ -14,6 +14,7 @@ export const usersTable = pgTable('users', (t) => ({
   gender: t.text({ enum: genders }),
   role: t.text({ enum: roles }).notNull(),
   islamic_org: t.text({ enum: islamicOrgs }),
+  rfid_uid: t.varchar({ length: 20 }),
   last_sign_in_at: t.timestamp({ withTimezone: true }),
   ...timestamps,
 }));

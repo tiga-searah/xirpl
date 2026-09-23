@@ -211,7 +211,7 @@ export default function AppSidebar() {
             </a>
           </div>
           <p className="text-muted-foreground mt-1 text-center text-[11px] font-semibold tracking-wide">
-            V2.1.4
+            V2.1.5
           </p>
           <p className="text-muted-foreground mt-1 text-center text-[11px] font-semibold tracking-wide">
             © 2026 TigaSearah

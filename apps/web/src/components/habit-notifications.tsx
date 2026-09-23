@@ -3,6 +3,11 @@
 import { Checkbox } from '@fe/components/ui/checkbox';
 import { useUser } from '@fe/hooks/use-user';
 import api from '@fe/lib/api';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@xirpl/shared/components/ui/tooltip';
 import { useEffect, useRef, useState } from 'react';
 
 function apiError(status: number) {
@@ -219,13 +224,26 @@ function NotificationControl({
             aria-describedby="habit-reminder-description habit-reminder-status"
             aria-busy={pending}
           />
-          <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
             <label
               htmlFor="habit-reminder"
               className="font-semibold text-foreground"
             >
               Ingatkan check-in pukul 06.45 WIB
             </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="cursor-help rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-300"
+                >
+                  Experimental
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Fitur ini masih dalam tahap uji coba
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
         {error && (

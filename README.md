@@ -92,7 +92,7 @@ bun run dev:web      # Web only
 | `bun run lint` | Biome check |
 | `bun run lint:fix` | Biome check + auto-fix |
 | `bun run format` | Biome format |
-| `bun run db:generate` / `db:migrate` / `db:push` / `db:pull` | Manage database schema |
+| `bun run db:generate` / `db:migrate` / `db:push` / `db:pull` / `db:seed` | Manage database schema & seed local data |
 
 ## API Modules
 
@@ -104,6 +104,7 @@ bun run dev:web      # Web only
 - **Leaderboard** — streak rankings
 - **Storage** — file uploads to S3-compatible storage
 - **Notifications** — authenticated `GET`, `POST`, `PATCH`, `DELETE` at `/notifications/subscriptions`; browser-scoped check-in reminders
+- **Bazzar Orders** — event bazzar orders tracking (+ web interface at `/bazzar-orders`), restricted to UUID `d1f8f009-f157-49eb-abc8-44ae6a55a409` or `developer` role
 
 ## Check-in push reminders
 
@@ -124,6 +125,11 @@ NOTIFICATION_CHECK_DATABASE_URL=postgres://user:pass@localhost/test_db \
 ```
 
 The check exercises real authenticated routes and database queries, VAPID encryption, and worker event handling; external push transport is simulated.
+
+```bash
+BAZZAR_ORDER_CHECK_DATABASE_URL=postgres://user:pass@localhost/test_db \
+  bun apps/api/src/modules/bazzar-orders/bazzar-orders.check.ts
+```
 
 ## Docker
 

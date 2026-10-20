@@ -19,7 +19,8 @@
     "db:generate": "bun run --cwd packages/db db:generate",
     "db:migrate": "bun run --cwd packages/db db:migrate",
     "db:push": "bun run --cwd packages/db db:push",
-    "db:pull": "bun run --cwd packages/db db:pull"
+    "db:pull": "bun run --cwd packages/db db:pull",
+    "db:seed": "bun run --cwd packages/db db:seed"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.6",

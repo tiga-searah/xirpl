@@ -8,6 +8,7 @@ import {
   BookOpenCheckIcon,
   CalendarDaysIcon,
   ClipboardListIcon,
+  ClipboardCheckIcon,
   Code2Icon,
   HomeIcon,
   LayoutDashboardIcon,
@@ -89,6 +90,9 @@ export default function AppSidebar() {
   const path = usePathname();
   const { user } = useUser();
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
+  const canManageBazzar =
+    user?.id === 'd1f8f009-f157-49eb-abc8-44ae6a55a409' ||
+    user?.role === 'developer';
 
   // Close after navigation commits — closing on click races the route
   // transition and the sheet re-pops mid-render.
@@ -163,6 +167,31 @@ export default function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        {canManageBazzar && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-extrabold tracking-widest uppercase">
+              Bazzar
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-1.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={path === '/bazzar-orders'}
+                    className={cn(
+                      itemBase,
+                      path === '/bazzar-orders' && active,
+                    )}
+                  >
+                    <Link href="/bazzar-orders">
+                      <ClipboardCheckIcon /> Pesanan Bazzar
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-extrabold tracking-widest uppercase">

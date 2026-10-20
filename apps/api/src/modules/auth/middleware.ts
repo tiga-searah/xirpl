@@ -1,5 +1,5 @@
-import Elysia from 'elysia';
 import { ADMIN_ROLES, DEV_ROLE } from '@be/lib/constants';
+import Elysia from 'elysia';
 import { AuthModel } from './model';
 import { Auth } from './service';
 
@@ -91,6 +91,39 @@ export const requireDev = new Elysia({ name: 'Auth.requireDev' })
         message: 'Forbidden',
       });
   })
+  .guard({
+    response: {
+      401: AuthModel.unauthorized,
+      403: AuthModel.forbidden,
+    },
+  })
+  .as('scoped');
+
+export const requireBazzar = new Elysia({ name: 'Auth.requireBazzar' })
+  .use(authResolver)
+  .onBeforeHandle(({ auth, status }) => {
+    if (!auth.user)
+      return status(401, {
+        success: false,
+        message: 'Unauthorized',
+      });
+
+    if (
+      auth.user.id !== 'd1f8f009-f157-49eb-abc8-44ae6a55a409' &&
+      auth.user.role !== DEV_ROLE
+    )
+      return status(403, {
+        success: false,
+        message: 'Forbidden',
+      });
+  })
+  .resolve(({ auth }) => ({
+    auth: {
+      ...auth,
+      user: auth.user!,
+      session: auth.session!,
+    },
+  }))
   .guard({
     response: {
       401: AuthModel.unauthorized,

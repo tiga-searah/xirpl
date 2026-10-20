@@ -4,6 +4,7 @@ import openapi from '@elysia/openapi';
 import { SITE_NAME } from '@xirpl/shared';
 import { Elysia } from 'elysia';
 import { auth } from './modules/auth';
+import { bazzarOrders } from './modules/bazzar-orders';
 import { calendar } from './modules/calendar';
 import { checkins } from './modules/checkins';
 import { checkinsAdmin } from './modules/checkins/admin';
@@ -57,6 +58,9 @@ const app = new Elysia()
           {
             name: 'Notifications',
           },
+          {
+            name: 'Bazzar Orders',
+          },
         ],
         components: {
           securitySchemes: {
@@ -93,6 +97,7 @@ const app = new Elysia()
 
   .use([
     auth,
+    bazzarOrders,
     user,
     iot,
     checkins,

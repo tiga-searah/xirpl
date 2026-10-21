@@ -10,8 +10,11 @@ export const bazzarOrdersTable = pgTable(
     seller: t.text().notNull(),
     food_quantity: t.integer().notNull(),
     drink_quantity: t.integer().notNull(),
+    // Unique flavor picks across every pangsit in the order.
+    food_flavors: t.text().array().notNull().default(sql`'{}'::text[]`),
     price: t.integer().notNull(),
     note: t.text(),
+    done: t.boolean().notNull().default(false),
     created_at: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
     updated_at: t
       .timestamp({ withTimezone: true })

@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'duo-card duo-press bg-primary text-primary-foreground uppercase [--duo-shade:color-mix(in_srgb,var(--primary)_70%,black)] hover:bg-primary/95 dark:[--duo-shade:color-mix(in_srgb,var(--primary)_55%,black)]',
+          'duo-card duo-press border-(--duo-shade) bg-primary text-primary-foreground uppercase [--duo-shade:color-mix(in_srgb,var(--primary)_70%,black)] hover:bg-primary/95 dark:[--duo-shade:color-mix(in_srgb,var(--primary)_55%,black)]',
         outline:
           'duo-card duo-press border-border bg-card hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary:

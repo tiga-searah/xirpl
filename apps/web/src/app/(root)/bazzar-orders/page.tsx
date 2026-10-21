@@ -1,5 +1,6 @@
 'use client';
 import type { BazzarOrder } from '@be/modules/bazzar-orders/model';
+import PageHero from '@fe/components/page-hero';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +19,15 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@fe/components/ui/combobox';
-import PageHero from '@fe/components/page-hero';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@fe/components/ui/dropdown-menu';
 import { useStudents } from '@fe/hooks/use-students';
 import { useUser } from '@fe/hooks/use-user';
 import api from '@fe/lib/api';
@@ -26,9 +35,21 @@ import { cn } from '@fe/lib/utils';
 import { InfoHint } from '@xirpl/shared/components/info-hint';
 import XiRplMascot from '@xirpl/shared/components/mascot';
 import { Button } from '@xirpl/shared/components/ui/button';
+import { Skeleton } from '@xirpl/shared/components/ui/skeleton';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@xirpl/shared/components/ui/tooltip';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Ban,
+  Boxes,
   CheckIcon,
   ChefHat,
+  ChevronDown,
   Coffee,
   LayoutList,
   Pencil,
@@ -40,6 +61,7 @@ import {
   UtensilsCrossed,
   Wallet,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   type FormEvent,
   useCallback,
@@ -60,6 +82,80 @@ const FLAVOR_STYLE: Record<string, string> = {
   Balado: 'border-orange-300 bg-orange-100 text-orange-800',
   Manis: 'border-pink-300 bg-pink-100 text-pink-800',
 };
+type GroupBy = 'none' | 'students' | 'item';
+type SortKey =
+  | 'created_at'
+  | 'customer_name'
+  | 'seller'
+  | 'food_quantity'
+  | 'food_flavors'
+  | 'drink_quantity'
+  | 'price'
+  | 'note'
+  | 'done';
+type SortDir = 'asc' | 'desc';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'created_at', label: 'Waktu' },
+  { key: 'customer_name', label: 'Pelanggan' },
+  { key: 'seller', label: 'Penjual' },
+  { key: 'food_quantity', label: 'Pangsit' },
+  { key: 'food_flavors', label: 'Rasa' },
+  { key: 'drink_quantity', label: 'Teh' },
+  { key: 'price', label: 'Total' },
+  { key: 'note', label: 'Catatan' },
+  { key: 'done', label: 'Status' },
+];
+
+const SORT_LABELS: Record<SortKey, string> = {
+  created_at: 'Waktu',
+  customer_name: 'Pelanggan',
+  seller: 'Penjual',
+  food_quantity: 'Pangsit',
+  food_flavors: 'Rasa',
+  drink_quantity: 'Teh',
+  price: 'Total',
+  note: 'Catatan',
+  done: 'Status',
+};
+
+const TABLE_COLUMNS: {
+  key: SortKey;
+  label: string;
+}[] = [
+  { key: 'customer_name', label: 'Pelanggan' },
+  { key: 'seller', label: 'Penjual' },
+  { key: 'food_quantity', label: 'Pangsit' },
+  { key: 'food_flavors', label: 'Rasa' },
+  { key: 'drink_quantity', label: 'Teh' },
+  { key: 'price', label: 'Total' },
+  { key: 'note', label: 'Catatan' },
+  { key: 'created_at', label: 'Waktu' },
+];
+
+function ActionTooltip({
+  category,
+  label,
+  children,
+}: {
+  category: string;
+  label: string;
+  children: React.ReactElement;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side="bottom"
+        sideOffset={6}
+        className="flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1 text-center font-medium shadow-md"
+      >
+        <span className="font-extrabold text-xs">{category}</span>
+        <span className="text-[11px] opacity-80">{label}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type FlavorRow = { id: number; picked: string[] };
 
@@ -187,14 +283,14 @@ function SellerCombobox({
       />
       <ComboboxContent>
         <ComboboxList>
-          {names.map((name) => (
+          {(name: string) => (
             <ComboboxItem key={name} value={name}>
               <span className="truncate font-semibold">{name}</span>
               <span className="text-muted-foreground ml-auto text-xs font-medium">
                 {nisByName.get(name)}
               </span>
             </ComboboxItem>
-          ))}
+          )}
         </ComboboxList>
         <ComboboxEmpty>
           {loading
@@ -205,10 +301,40 @@ function SellerCombobox({
     </Combobox>
   );
 }
+function BazzarOrdersSkeleton({ canManage = false }: { canManage?: boolean }) {
+  return (
+    <main
+      className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6"
+      role="status"
+      aria-label="Memuat pesanan bazzar"
+    >
+      <Skeleton className="h-40 rounded-3xl" />
+      {canManage && <Skeleton className="h-72 rounded-3xl" />}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-20 rounded-2xl" />
+        ))}
+      </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-44 rounded-xl" />
+          <Skeleton className="h-9 w-20 rounded-xl" />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-44 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
 
 export default function BazzarOrdersPage() {
+  const router = useRouter();
   const { user, loading: userLoading } = useUser();
-  const allowed =
+  const [students] = useStudents();
+  const canManage =
     user?.id === 'd1f8f009-f157-49eb-abc8-44ae6a55a409' ||
     user?.role === 'developer';
   const [orders, setOrders] = useState<BazzarOrder[]>([]);
@@ -218,6 +344,9 @@ export default function BazzarOrdersPage() {
   const [form, setForm] = useState<OrderForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [view, setView] = useState<'list' | 'table'>('list');
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
@@ -225,8 +354,9 @@ export default function BazzarOrdersPage() {
   } | null>(null);
   const busyRef = useRef(false);
 
-  const load = useCallback(async (silent: boolean) => {
-    if (busyRef.current) return;
+  // ponytail: polling + immediate reload on action; upgrade to WebSocket/SSE if multi-user latency needs sub-second sync
+  const load = useCallback(async (silent: boolean, force = false) => {
+    if (busyRef.current && !force) return;
     if (!silent) setLoading(true);
     try {
       const { data } = await api['bazzar-orders'].get();
@@ -242,18 +372,22 @@ export default function BazzarOrdersPage() {
   }, []);
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!user) return;
     void load(false);
-  }, [allowed, load]);
+  }, [user, load]);
 
   // Auto refresh every 5s; hidden tabs skip the poll.
   useEffect(() => {
-    if (!allowed) return;
+    if (!user) return;
     const id = setInterval(() => {
       if (!document.hidden) void load(true);
     }, 5000);
     return () => clearInterval(id);
-  }, [allowed, load]);
+  }, [user, load]);
+  useEffect(() => {
+    if (userLoading || user) return;
+    router.replace('/login?r=%2Fbazzar-orders');
+  }, [router, user, userLoading]);
 
   const withBusy = async (task: () => Promise<void>) => {
     if (busyRef.current) return;
@@ -305,19 +439,179 @@ export default function BazzarOrdersPage() {
   const totalPrice = orders.reduce((sum, order) => sum + order.price, 0);
   const doneCount = orders.filter((order) => order.done).length;
 
-  if (userLoading)
-    return (
-      <main className="mx-auto max-w-6xl p-6" role="status">
-        Memeriksa akses…
-      </main>
-    );
-  if (!allowed)
-    return (
-      <main className="mx-auto max-w-5xl p-6">
-        <h1 className="font-display text-2xl font-bold">Akses ditolak</h1>
-        <p>Halaman ini hanya untuk petugas bazzar.</p>
-      </main>
-    );
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(
+        key === 'created_at' ||
+          key === 'price' ||
+          key === 'food_quantity' ||
+          key === 'drink_quantity'
+          ? 'desc'
+          : 'asc',
+      );
+    }
+  };
+
+  const sortOrders = useCallback(
+    (list: BazzarOrder[]) => {
+      return [...list].sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case 'created_at':
+            cmp =
+              new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime();
+            break;
+          case 'customer_name':
+            cmp = a.customer_name.localeCompare(b.customer_name, 'id-ID', {
+              sensitivity: 'base',
+            });
+            break;
+          case 'seller':
+            cmp = a.seller.localeCompare(b.seller, 'id-ID', {
+              sensitivity: 'base',
+            });
+            break;
+          case 'food_quantity':
+            cmp = a.food_quantity - b.food_quantity;
+            break;
+          case 'food_flavors':
+            cmp = a.food_flavors
+              .join('+')
+              .localeCompare(b.food_flavors.join('+'), 'id-ID');
+            break;
+          case 'drink_quantity':
+            cmp = a.drink_quantity - b.drink_quantity;
+            break;
+          case 'price':
+            cmp = a.price - b.price;
+            break;
+          case 'note':
+            cmp = (a.note ?? '').localeCompare(b.note ?? '', 'id-ID');
+            break;
+          case 'done':
+            cmp = Number(a.done) - Number(b.done);
+            break;
+        }
+        if (cmp === 0) {
+          cmp =
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    },
+    [sortKey, sortDir],
+  );
+
+  const sortedOrders = useMemo(() => sortOrders(orders), [orders, sortOrders]);
+
+  const itemGroups = useMemo(() => {
+    const foodOrders = sortedOrders.filter((o) => o.food_quantity > 0);
+    const drinkOrders = sortedOrders.filter((o) => o.drink_quantity > 0);
+
+    const foodSum = foodOrders.reduce((sum, o) => sum + o.food_quantity, 0);
+    const drinkSum = drinkOrders.reduce((sum, o) => sum + o.drink_quantity, 0);
+
+    return [
+      {
+        id: 'food',
+        title: 'Pangsit Goreng',
+        subtitle: 'Varian: Pedas, Balado, Manis',
+        icon: UtensilsCrossed,
+        orders: foodOrders,
+        summary: {
+          orderCount: foodOrders.length,
+          foodCount: foodSum,
+          drinkCount: 0,
+          totalPrice: foodSum * 5000,
+          doneCount: foodOrders.filter((o) => o.done).length,
+        },
+      },
+      {
+        id: 'drink',
+        title: 'Lemon Tea Mager',
+        subtitle: 'Minuman dingin segar',
+        icon: Coffee,
+        orders: drinkOrders,
+        summary: {
+          orderCount: drinkOrders.length,
+          foodCount: 0,
+          drinkCount: drinkSum,
+          totalPrice: drinkSum * 5000,
+          doneCount: drinkOrders.filter((o) => o.done).length,
+        },
+      },
+    ];
+  }, [sortedOrders]);
+
+  const studentGroups = useMemo(() => {
+    const known = new Set<string>();
+    const list: { name: string; nis?: number }[] = [];
+
+    for (const s of students) {
+      const key = s.name.trim().toLowerCase();
+      if (!known.has(key)) {
+        known.add(key);
+        list.push({ name: s.name, nis: s.nis });
+      }
+    }
+
+    for (const o of orders) {
+      const key = o.seller.trim().toLowerCase();
+      if (key && !known.has(key)) {
+        known.add(key);
+        list.push({ name: o.seller });
+      }
+    }
+
+    const result = list.map((st) => {
+      const stOrders = sortedOrders.filter(
+        (o) => o.seller.trim().toLowerCase() === st.name.trim().toLowerCase(),
+      );
+      const foodSum = stOrders.reduce((sum, o) => sum + o.food_quantity, 0);
+      const drinkSum = stOrders.reduce((sum, o) => sum + o.drink_quantity, 0);
+      const totalPrice = stOrders.reduce((sum, o) => sum + o.price, 0);
+      const doneCount = stOrders.filter((o) => o.done).length;
+
+      return {
+        id: `student-${st.name}`,
+        title: st.name,
+        subtitle: st.nis ? `NIS: ${st.nis}` : 'Penjual',
+        icon: Users,
+        orders: stOrders,
+        summary: {
+          orderCount: stOrders.length,
+          foodCount: foodSum,
+          drinkCount: drinkSum,
+          totalPrice,
+          doneCount,
+        },
+      };
+    });
+
+    return result.sort((a, b) => {
+      const aHas = a.summary.orderCount > 0 ? 1 : 0;
+      const bHas = b.summary.orderCount > 0 ? 1 : 0;
+      if (bHas !== aHas) return bHas - aHas;
+      if (b.summary.orderCount !== a.summary.orderCount) {
+        return b.summary.orderCount - a.summary.orderCount;
+      }
+      return a.title.localeCompare(b.title, 'id-ID');
+    });
+  }, [students, orders, sortedOrders]);
+
+  const activeGroups =
+    groupBy === 'item'
+      ? itemGroups
+      : groupBy === 'students'
+        ? studentGroups
+        : null;
+
+  if (userLoading || !user || (loading && orders.length === 0))
+    return <BazzarOrdersSkeleton canManage={canManage} />;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -361,7 +655,7 @@ export default function BazzarOrdersPage() {
       if (response.error || !response.data)
         throw new Error('Gagal menyimpan pesanan.');
       reset();
-      await load(true);
+      await load(true, true);
     });
   }
 
@@ -404,6 +698,7 @@ export default function BazzarOrdersPage() {
           item.id === order.id ? { ...item, done: !item.done } : item,
         ),
       );
+      await load(true, true);
     });
   }
 
@@ -415,9 +710,275 @@ export default function BazzarOrdersPage() {
       }).delete();
       if (requestError) throw new Error('Gagal menghapus pesanan.');
       if (editingId === id) reset();
-      await load(true);
+      await load(true, true);
     });
   }
+  const renderOrderCard = (order: BazzarOrder) => {
+    const groups = flavorGroups(order.food_flavors);
+    return (
+      <li
+        key={order.id}
+        className={cn(
+          'duo-card relative overflow-hidden rounded-2xl border-2 p-4',
+          order.done
+            ? 'border-emerald-400 bg-pastel-green/60 [--duo-shade:rgb(16_185_129/0.35)] dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:[--duo-shade:rgb(0_0_0/0.4)]'
+            : 'bg-card',
+        )}
+      >
+        <span className="border-border absolute inset-y-0 left-0 border-r-2 border-dashed" />
+        <div className="flex flex-wrap items-start justify-between gap-2 pl-2">
+          <div className="min-w-0">
+            <h3 className="font-display truncate text-lg font-extrabold">
+              {order.customer_name}
+            </h3>
+            <p className="text-muted-foreground flex items-center gap-1 text-sm font-semibold">
+              <Users className="size-3.5" />
+              Penjual: {order.seller}
+            </p>
+          </div>
+          <div className="text-right">
+            <strong className="font-display block text-lg">
+              {rupiah.format(order.price)}
+            </strong>
+            {order.done && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-extrabold text-white">
+                <CheckIcon className="size-3" /> Selesai
+              </span>
+            )}
+          </div>
+        </div>
+
+        <dl className="mt-3 grid grid-cols-2 gap-2 pl-2 text-sm">
+          <div>
+            <dt className="text-muted-foreground text-xs font-bold uppercase">
+              Pangsit
+            </dt>
+            <dd className="font-extrabold">{order.food_quantity} pcs</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs font-bold uppercase">
+              Lemon tea
+            </dt>
+            <dd className="font-extrabold">{order.drink_quantity} gelas</dd>
+          </div>
+        </dl>
+
+        {groups.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-1.5 pl-2">
+            {groups.map((group) => (
+              <li key={group.entry} className="flex items-center gap-1">
+                <FlavorChip entry={group.entry} />
+                <span className="text-muted-foreground text-xs font-bold">
+                  ×{group.count}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {order.note && (
+          <p className="mt-2 rounded-lg bg-black/5 dark:bg-white/5 px-2 py-1 pl-2 text-sm font-medium whitespace-pre-wrap">
+            {order.note}
+          </p>
+        )}
+
+        <p className="text-muted-foreground mt-2 pl-2 text-xs font-medium">
+          Dibuat: {clock(order.created_at)}
+          {order.updated_at !== order.created_at &&
+            ` · Diperbarui: ${clock(order.updated_at)}`}
+        </p>
+
+        {canManage && (
+          <div className="mt-3 flex flex-wrap gap-2 pl-2">
+            <Button
+              type="button"
+              variant={order.done ? 'outline' : 'special'}
+              size="sm"
+              disabled={busy}
+              onClick={() => toggleDone(order)}
+              aria-label={`${order.done ? 'Batalkan selesai' : 'Tandai selesai'} pesanan ${order.customer_name}`}
+            >
+              <CheckIcon />
+              {order.done ? 'Batal selesai' : 'Pesanan selesai'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => editOrder(order.id)}
+              aria-label={`Ubah pesanan ${order.customer_name}`}
+            >
+              <Pencil /> Ubah
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={busy}
+              onClick={() =>
+                setPendingDelete({
+                  id: order.id,
+                  customer: order.customer_name,
+                })
+              }
+              aria-label={`Hapus pesanan ${order.customer_name}`}
+            >
+              <Trash2 /> Hapus
+            </Button>
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  const renderOrdersTable = (items: BazzarOrder[]) => (
+    <div className="duo-card overflow-hidden rounded-2xl border-2">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[60rem] border-collapse text-sm">
+          <thead>
+            <tr className="bg-muted text-muted-foreground text-left text-xs font-extrabold uppercase">
+              {TABLE_COLUMNS.map((col) => {
+                const isSorted = sortKey === col.key;
+                return (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    onClick={() => handleSort(col.key)}
+                    className="group/th cursor-pointer select-none px-3 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    aria-sort={
+                      isSorted
+                        ? sortDir === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{col.label}</span>
+                      {isSorted ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5 text-primary" />
+                        ) : (
+                          <ArrowDown className="size-3.5 text-primary" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3 opacity-30 transition-opacity group-hover/th:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
+              {canManage && (
+                <th scope="col" className="px-3 py-2 text-right">
+                  Aksi
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((order) => (
+              <tr
+                key={order.id}
+                className={cn(
+                  'border-border border-t-2',
+                  order.done
+                    ? 'bg-pastel-green/70 text-emerald-950 dark:bg-emerald-500/15 dark:text-emerald-100'
+                    : 'bg-card even:bg-muted/30',
+                )}
+              >
+                <td className="px-3 py-2 font-extrabold">
+                  <span className="flex items-center gap-1.5">
+                    {order.done && (
+                      <CheckIcon className="size-3.5 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                    )}
+                    {order.customer_name}
+                  </span>
+                </td>
+                <td className="px-3 py-2 font-semibold">{order.seller}</td>
+                <td className="px-3 py-2 tabular-nums">
+                  {order.food_quantity}
+                </td>
+                <td className="px-3 py-2">
+                  {order.food_flavors.length ? (
+                    <span className="flex flex-wrap gap-1">
+                      {flavorGroups(order.food_flavors).map((group) => (
+                        <span
+                          key={group.entry}
+                          className="inline-flex items-center gap-1"
+                        >
+                          <FlavorChip entry={group.entry} />
+                          <span className="text-xs font-bold">
+                            ×{group.count}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 tabular-nums">
+                  {order.drink_quantity}
+                </td>
+                <td className="px-3 py-2 font-bold tabular-nums">
+                  {rupiah.format(order.price)}
+                </td>
+                <td className="text-muted-foreground max-w-56 truncate px-3 py-2">
+                  {order.note ?? '—'}
+                </td>
+                <td className="text-muted-foreground px-3 py-2 text-xs font-medium whitespace-nowrap">
+                  {clock(order.created_at)}
+                </td>
+                {canManage && (
+                  <td className="px-3 py-2">
+                    <span className="flex justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant={order.done ? 'outline' : 'special'}
+                        size="xs"
+                        disabled={busy}
+                        onClick={() => toggleDone(order)}
+                        aria-label={`${order.done ? 'Batalkan selesai' : 'Tandai selesai'} pesanan ${order.customer_name}`}
+                      >
+                        <CheckIcon />
+                        {order.done ? 'Batal' : 'Selesai'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-xs"
+                        disabled={busy}
+                        onClick={() => editOrder(order.id)}
+                        aria-label={`Ubah pesanan ${order.customer_name}`}
+                      >
+                        <Pencil />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon-xs"
+                        disabled={busy}
+                        onClick={() =>
+                          setPendingDelete({
+                            id: order.id,
+                            customer: order.customer_name,
+                          })
+                        }
+                        aria-label={`Hapus pesanan ${order.customer_name}`}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </span>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   const totalItems = form.food_quantity + form.drink_quantity;
 
@@ -426,7 +987,7 @@ export default function BazzarOrdersPage() {
       <PageHero
         pill="Kantin bazzar"
         title="Pesanan Bazzar"
-        desc="Pangsit goreng & Lemon Tea Mager — Rp5.000 per item. Pesanan baru masuk langsung terlihat dalam 5 detik."
+        desc="Pangsit goreng & Lemon Tea Mager"
       >
         <XiRplMascot
           pose="cheer"
@@ -444,203 +1005,209 @@ export default function BazzarOrdersPage() {
         </p>
       )}
 
-      <section
-        id="bazzar-order-form"
-        className="duo-card scroll-mt-20 rounded-3xl border-2 bg-card p-5 sm:p-6"
-      >
-        <div className="mb-5 flex items-center gap-3">
-          <span className="border-brand-blue/40 bg-pastel-blue text-brand-navy grid size-10 shrink-0 place-items-center rounded-2xl border-2">
-            <ChefHat className="size-5" />
-          </span>
-          <div>
-            <h2 className="font-display text-xl font-extrabold">
-              {editingId ? 'Ubah pesanan' : 'Catat pesanan baru'}
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {editingId
-                ? 'Perubahan akan menggantikan data pesanan ini.'
-                : 'Isi nama pemesan, siswa penerima, lalu rasanya.'}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-1.5 font-bold">
-            Nama pelanggan
-            <input
-              required
-              maxLength={255}
-              value={form.customer_name}
-              onChange={(event) =>
-                setForm({ ...form, customer_name: event.target.value })
-              }
-              placeholder="Siapa yang memesan?"
-              className="border-input bg-background focus-visible:border-ring h-11 rounded-xl border-2 px-3 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-          </label>
-
-          <div className="grid gap-1.5">
-            <span className="flex items-center gap-1.5 font-bold">
-              Nama penjual
-              <InfoHint
-                label="Nama penjual"
-                text="Siswa yang menerima pesanan ini."
-              />
+      {canManage && (
+        <section
+          id="bazzar-order-form"
+          className="duo-card scroll-mt-20 rounded-3xl border-2 bg-card p-5 sm:p-6"
+        >
+          <div className="mb-5 flex items-center gap-3">
+            <span className="border-brand-blue/40 bg-pastel-blue text-brand-navy grid size-10 shrink-0 place-items-center rounded-2xl border-2">
+              <ChefHat className="size-5" />
             </span>
-            <SellerCombobox
-              value={form.seller}
-              disabled={busy}
-              onChange={(seller) => setForm({ ...form, seller })}
-            />
+            <div>
+              <h2 className="font-display text-xl font-extrabold">
+                {editingId ? 'Ubah pesanan' : 'Catat pesanan baru'}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {editingId
+                  ? 'Perubahan akan menggantikan data pesanan ini.'
+                  : 'Isi nama pemesan, siswa penerima, lalu rasanya.'}
+              </p>
+            </div>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border-2 border-dashed p-4 sm:col-span-2 sm:grid-cols-[10rem_1fr]">
-            <label className="grid content-start gap-1.5 font-bold">
-              Pangsit Goreng
+          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1.5 font-bold">
+              Nama pelanggan
+              <input
+                required
+                maxLength={255}
+                value={form.customer_name}
+                onChange={(event) =>
+                  setForm({ ...form, customer_name: event.target.value })
+                }
+                placeholder="Siapa yang memesan?"
+                className="border-input bg-background focus-visible:border-ring h-11 rounded-xl border-2 px-3 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+
+            <div className="grid gap-1.5">
+              <span className="flex items-center gap-1.5 font-bold">
+                Nama penjual
+                <InfoHint
+                  label="Nama penjual"
+                  text="Siswa yang menerima pesanan ini."
+                />
+              </span>
+              <SellerCombobox
+                value={form.seller}
+                disabled={busy}
+                onChange={(seller) => setForm({ ...form, seller })}
+              />
+            </div>
+
+            <div className="grid gap-3 rounded-2xl border-2 border-dashed p-4 sm:col-span-2 sm:grid-cols-[10rem_1fr]">
+              <label className="grid content-start gap-1.5 font-bold">
+                Pangsit Goreng
+                <input
+                  type="number"
+                  min="0"
+                  max="214748"
+                  step="1"
+                  required
+                  value={form.food_quantity}
+                  onChange={(event) =>
+                    setFoodQuantity(
+                      event.target.value === ''
+                        ? 0
+                        : Number(event.target.value),
+                    )
+                  }
+                  className="border-input bg-background focus-visible:border-ring h-11 rounded-xl border-2 px-3 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                />
+              </label>
+
+              <div className="space-y-2">
+                <p className="text-sm font-bold">
+                  Varian rasa per pangsit{' '}
+                  <span className="text-muted-foreground font-medium">
+                    (boleh lebih dari satu = mix)
+                  </span>
+                </p>
+                {form.food_quantity === 0 && (
+                  <p className="text-muted-foreground rounded-xl border-2 border-dashed p-3 text-sm">
+                    Isi jumlah pangsit dulu untuk memilih rasa.
+                  </p>
+                )}
+                <div className="grid max-h-56 gap-2 overflow-y-auto pr-1">
+                  {form.flavors.map((row, index) => (
+                    <div
+                      key={row.id}
+                      className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2"
+                    >
+                      <span className="bg-card border-border grid size-7 shrink-0 place-items-center rounded-lg border-2 text-xs font-extrabold">
+                        {index + 1}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:flex-1 max-sm:grid-cols-2">
+                        {FLAVORS.map((flavor) => {
+                          const checked = row.picked.includes(flavor);
+                          const id = `flavor-${row.id}-${flavor}`;
+                          return (
+                            <label
+                              key={flavor}
+                              htmlFor={id}
+                              className={cn(
+                                'flex cursor-pointer items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-sm font-bold transition-colors max-sm:justify-self-center',
+                                // On phones Manis takes the centered second row under Pedas & Balado.
+                                flavor === 'manis' && 'max-sm:col-span-2',
+                                checked
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-border bg-card hover:bg-accent',
+                              )}
+                            >
+                              <Checkbox
+                                id={id}
+                                checked={checked}
+                                onCheckedChange={() =>
+                                  toggleFlavor(index, flavor)
+                                }
+                                className="size-4 rounded"
+                              />
+                              {FLAVOR_LABEL[flavor]}
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {row.picked.length > 1 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-extrabold text-purple-800 max-sm:order-2">
+                          <Split className="size-3" />
+                          {flavorLabel(toPayloadFlavor(row.picked))} · mix
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <label className="grid gap-1.5 font-bold">
+              Lemon Tea Mager
               <input
                 type="number"
                 min="0"
                 max="214748"
                 step="1"
                 required
-                value={form.food_quantity}
+                value={form.drink_quantity}
                 onChange={(event) =>
-                  setFoodQuantity(
-                    event.target.value === '' ? 0 : Number(event.target.value),
-                  )
+                  setForm({
+                    ...form,
+                    drink_quantity:
+                      event.target.value === ''
+                        ? 0
+                        : Number(event.target.value),
+                  })
                 }
                 className="border-input bg-background focus-visible:border-ring h-11 rounded-xl border-2 px-3 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               />
             </label>
 
-            <div className="space-y-2">
-              <p className="text-sm font-bold">
-                Varian rasa per pangsit{' '}
-                <span className="text-muted-foreground font-medium">
-                  (boleh lebih dari satu = mix)
+            <label className="grid gap-1.5 font-bold">
+              Catatan (opsional)
+              <textarea
+                value={form.note}
+                onChange={(event) =>
+                  setForm({ ...form, note: event.target.value })
+                }
+                placeholder="Contoh: tanpa saus, bungkus terpisah…"
+                className="border-input bg-background focus-visible:border-ring min-h-11 rounded-xl border-2 px-3 py-2 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/60 p-3 sm:col-span-2">
+              <p className="font-extrabold">
+                Total pesanan:{' '}
+                <span className="text-primary text-lg">
+                  {rupiah.format(totalItems * 5000)}
+                </span>
+                <span className="text-muted-foreground ml-2 text-sm font-medium">
+                  ({totalItems} item)
                 </span>
               </p>
-              {form.food_quantity === 0 && (
-                <p className="text-muted-foreground rounded-xl border-2 border-dashed p-3 text-sm">
-                  Isi jumlah pangsit dulu untuk memilih rasa.
-                </p>
-              )}
-              <div className="grid max-h-56 gap-2 overflow-y-auto pr-1">
-                {form.flavors.map((row, index) => (
-                  <div
-                    key={row.id}
-                    className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2"
+              <div className="flex gap-2">
+                <Button type="submit" size="lg" disabled={busy}>
+                  {busy
+                    ? 'Memproses…'
+                    : editingId
+                      ? 'Simpan perubahan'
+                      : 'Tambah pesanan'}
+                </Button>
+                {editingId && (
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={reset}
                   >
-                    <span className="bg-card border-border grid size-7 shrink-0 place-items-center rounded-lg border-2 text-xs font-extrabold">
-                      {index + 1}
-                    </span>
-                    <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:flex-1 max-sm:grid-cols-2">
-                      {FLAVORS.map((flavor) => {
-                        const checked = row.picked.includes(flavor);
-                        const id = `flavor-${row.id}-${flavor}`;
-                        return (
-                          <label
-                            key={flavor}
-                            htmlFor={id}
-                            className={cn(
-                              'flex cursor-pointer items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-sm font-bold transition-colors max-sm:justify-self-center',
-                              // On phones Manis takes the centered second row under Pedas & Balado.
-                              flavor === 'manis' && 'max-sm:col-span-2',
-                              checked
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border bg-card hover:bg-accent',
-                            )}
-                          >
-                            <Checkbox
-                              id={id}
-                              checked={checked}
-                              onCheckedChange={() =>
-                                toggleFlavor(index, flavor)
-                              }
-                              className="size-4 rounded"
-                            />
-                            {FLAVOR_LABEL[flavor]}
-                          </label>
-                        );
-                      })}
-                    </div>
-                    {row.picked.length > 1 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-extrabold text-purple-800 max-sm:order-2">
-                        <Split className="size-3" />
-                        {flavorLabel(toPayloadFlavor(row.picked))} · mix
-                      </span>
-                    )}
-                  </div>
-                ))}
+                    Batal
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
-
-          <label className="grid gap-1.5 font-bold">
-            Lemon Tea Mager
-            <input
-              type="number"
-              min="0"
-              max="214748"
-              step="1"
-              required
-              value={form.drink_quantity}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  drink_quantity:
-                    event.target.value === '' ? 0 : Number(event.target.value),
-                })
-              }
-              className="border-input bg-background focus-visible:border-ring h-11 rounded-xl border-2 px-3 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-          </label>
-
-          <label className="grid gap-1.5 font-bold">
-            Catatan (opsional)
-            <textarea
-              value={form.note}
-              onChange={(event) =>
-                setForm({ ...form, note: event.target.value })
-              }
-              placeholder="Contoh: tanpa saus, bungkus terpisah…"
-              className="border-input bg-background focus-visible:border-ring min-h-11 rounded-xl border-2 px-3 py-2 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-          </label>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/60 p-3 sm:col-span-2">
-            <p className="font-extrabold">
-              Total pesanan:{' '}
-              <span className="text-primary text-lg">
-                {rupiah.format(totalItems * 5000)}
-              </span>
-              <span className="text-muted-foreground ml-2 text-sm font-medium">
-                ({totalItems} item)
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <Button type="submit" size="lg" disabled={busy}>
-                {busy
-                  ? 'Memproses…'
-                  : editingId
-                    ? 'Simpan perubahan'
-                    : 'Tambah pesanan'}
-              </Button>
-              {editingId && (
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={reset}
-                >
-                  Batal
-                </Button>
-              )}
-            </div>
-          </div>
-        </form>
-      </section>
+          </form>
+        </section>
+      )}
 
       <section className="space-y-4" aria-labelledby="bazzar-list-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -660,37 +1227,153 @@ export default function BazzarOrdersPage() {
           </div>
           <div
             role="toolbar"
-            aria-label="Tampilan daftar pesanan"
-            className="border-border bg-card flex rounded-xl border-2 p-1"
+            aria-label="Filter dan tampilan daftar pesanan"
+            className="flex flex-wrap items-center gap-2"
           >
-            {(
-              [
-                ['list', LayoutList],
-                ['table', Table2],
-              ] as const
-            ).map(([mode, Icon]) => (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={view === mode}
-                onClick={() => setView(mode)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition-colors',
-                  view === mode
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <Icon className="size-4" />
-              </button>
-            ))}
+            {/* [Sort] */}
+            <div className="border-border bg-card flex rounded-xl border-2 p-1">
+              <DropdownMenu>
+                <ActionTooltip
+                  category="Sort"
+                  label={`${SORT_LABELS[sortKey]} (${sortDir.toUpperCase()})`}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Urutkan pesanan"
+                      className="flex items-center justify-center rounded-lg p-1.5 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <ArrowUpDown className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </ActionTooltip>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Urutkan berdasarkan</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={sortKey}
+                    onValueChange={(val) => setSortKey(val as SortKey)}
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <DropdownMenuRadioItem key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Arah urutan</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={sortDir}
+                    onValueChange={(val) => setSortDir(val as SortDir)}
+                  >
+                    <DropdownMenuRadioItem value="asc">
+                      Menaik (A-Z, 0-9)
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="desc">
+                      Menurun (Z-A, 9-0)
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* [None|Students|Item] */}
+            <div className="border-border bg-card flex rounded-xl border-2 p-1">
+              <ActionTooltip category="Group" label="None">
+                <button
+                  type="button"
+                  aria-pressed={groupBy === 'none'}
+                  onClick={() => setGroupBy('none')}
+                  aria-label="Tanpa grup"
+                  className={cn(
+                    'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
+                    groupBy === 'none'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  <Ban className="size-4" />
+                </button>
+              </ActionTooltip>
+
+              <ActionTooltip category="Group" label="Students">
+                <button
+                  type="button"
+                  aria-pressed={groupBy === 'students'}
+                  onClick={() => setGroupBy('students')}
+                  aria-label="Grup berdasarkan siswa"
+                  className={cn(
+                    'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
+                    groupBy === 'students'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  <Users className="size-4" />
+                </button>
+              </ActionTooltip>
+
+              <ActionTooltip category="Group" label="Item">
+                <button
+                  type="button"
+                  aria-pressed={groupBy === 'item'}
+                  onClick={() => setGroupBy('item')}
+                  aria-label="Grup berdasarkan item"
+                  className={cn(
+                    'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
+                    groupBy === 'item'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  <Boxes className="size-4" />
+                </button>
+              </ActionTooltip>
+            </div>
+
+            {/* [Grid|Table] */}
+            <div className="border-border bg-card flex rounded-xl border-2 p-1">
+              <ActionTooltip category="View" label="Grid">
+                <button
+                  type="button"
+                  aria-pressed={view === 'list'}
+                  onClick={() => setView('list')}
+                  aria-label="Tampilan grid"
+                  className={cn(
+                    'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
+                    view === 'list'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  <LayoutList className="size-4" />
+                </button>
+              </ActionTooltip>
+
+              <ActionTooltip category="View" label="Table">
+                <button
+                  type="button"
+                  aria-pressed={view === 'table'}
+                  onClick={() => setView('table')}
+                  aria-label="Tampilan tabel"
+                  className={cn(
+                    'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
+                    view === 'table'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  <Table2 className="size-4" />
+                </button>
+              </ActionTooltip>
+            </div>
           </div>
         </div>
-
-        {loading ? (
-          <p role="status" className="text-muted-foreground">
-            Memuat pesanan…
-          </p>
+        {loading && orders.length === 0 ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-44 rounded-2xl" />
+            ))}
+          </div>
         ) : (
           <>
             <section
@@ -751,312 +1434,123 @@ export default function BazzarOrdersPage() {
                   Pesanan yang dicatat akan muncul di sini otomatis.
                 </p>
               </div>
+            ) : activeGroups ? (
+              <div className="space-y-4">
+                {activeGroups.map((group) => (
+                  <details
+                    key={group.id}
+                    open={group.orders.length > 0}
+                    className="duo-card group rounded-2xl border-2 bg-card overflow-hidden transition-all"
+                  >
+                    <summary className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer select-none hover:bg-muted/40 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                      <div className="flex items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border-2 bg-pastel-blue/60 border-brand-blue/30 text-brand-navy dark:bg-blue-500/15 dark:border-blue-500/30 dark:text-blue-300">
+                          <group.icon className="size-4" />
+                        </span>
+                        <div>
+                          <h3 className="font-display text-base font-extrabold">
+                            {group.title}
+                          </h3>
+                          {group.subtitle && (
+                            <p className="text-muted-foreground text-xs font-medium">
+                              {group.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                          <span className="rounded-lg border bg-muted/60 px-2 py-0.5">
+                            {group.summary.orderCount} pesanan
+                          </span>
+                          {group.summary.foodCount > 0 && (
+                            <span className="rounded-lg border border-orange-300 bg-orange-100/80 px-2 py-0.5 text-orange-950 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-200">
+                              {group.summary.foodCount} pangsit
+                            </span>
+                          )}
+                          {group.summary.drinkCount > 0 && (
+                            <span className="rounded-lg border border-emerald-300 bg-pastel-green/70 px-2 py-0.5 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+                              {group.summary.drinkCount} teh
+                            </span>
+                          )}
+                          <span className="rounded-lg border border-primary/30 bg-primary/10 px-2 py-0.5 text-primary">
+                            {rupiah.format(group.summary.totalPrice)}
+                          </span>
+                          {group.summary.doneCount > 0 && (
+                            <span className="rounded-lg bg-emerald-600 px-2 py-0.5 text-white">
+                              {group.summary.doneCount} selesai
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                      </div>
+                    </summary>
+
+                    <div className="border-t-2 border-border p-4">
+                      {group.orders.length === 0 ? (
+                        <p className="text-muted-foreground text-xs italic py-2 text-center">
+                          Belum ada pesanan untuk {group.title}.
+                        </p>
+                      ) : view === 'list' ? (
+                        <ul className="grid gap-3 md:grid-cols-2">
+                          {group.orders.map((order) => renderOrderCard(order))}
+                        </ul>
+                      ) : (
+                        renderOrdersTable(group.orders)
+                      )}
+                    </div>
+                  </details>
+                ))}
+              </div>
             ) : view === 'list' ? (
               <ul className="grid gap-3 md:grid-cols-2">
-                {orders.map((order) => {
-                  const groups = flavorGroups(order.food_flavors);
-                  return (
-                    <li
-                      key={order.id}
-                      className={cn(
-                        'duo-card relative overflow-hidden rounded-2xl border-2 p-4',
-                        order.done
-                          ? 'border-emerald-400 bg-pastel-green/60 [--duo-shade:rgb(16_185_129/0.35)]'
-                          : 'bg-card',
-                      )}
-                    >
-                      <span className="border-border absolute inset-y-0 left-0 border-r-2 border-dashed" />
-                      <div className="flex flex-wrap items-start justify-between gap-2 pl-2">
-                        <div className="min-w-0">
-                          <h3 className="font-display truncate text-lg font-extrabold">
-                            {order.customer_name}
-                          </h3>
-                          <p className="text-muted-foreground flex items-center gap-1 text-sm font-semibold">
-                            <Users className="size-3.5" />
-                            Penjual: {order.seller}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <strong className="font-display block text-lg">
-                            {rupiah.format(order.price)}
-                          </strong>
-                          {order.done && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-extrabold text-white">
-                              <CheckIcon className="size-3" /> Selesai
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <dl className="mt-3 grid grid-cols-2 gap-2 pl-2 text-sm">
-                        <div>
-                          <dt className="text-muted-foreground text-xs font-bold uppercase">
-                            Pangsit
-                          </dt>
-                          <dd className="font-extrabold">
-                            {order.food_quantity} pcs
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground text-xs font-bold uppercase">
-                            Lemon tea
-                          </dt>
-                          <dd className="font-extrabold">
-                            {order.drink_quantity} gelas
-                          </dd>
-                        </div>
-                      </dl>
-
-                      {groups.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap gap-1.5 pl-2">
-                          {groups.map((group) => (
-                            <li
-                              key={group.entry}
-                              className="flex items-center gap-1"
-                            >
-                              <FlavorChip entry={group.entry} />
-                              <span className="text-muted-foreground text-xs font-bold">
-                                ×{group.count}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {order.note && (
-                        <p className="mt-2 rounded-lg bg-black/5 px-2 py-1 pl-2 text-sm font-medium whitespace-pre-wrap">
-                          {order.note}
-                        </p>
-                      )}
-
-                      <p className="text-muted-foreground mt-2 pl-2 text-xs font-medium">
-                        Dibuat: {clock(order.created_at)}
-                        {order.updated_at !== order.created_at &&
-                          ` · Diperbarui: ${clock(order.updated_at)}`}
-                      </p>
-
-                      <div className="mt-3 flex flex-wrap gap-2 pl-2">
-                        <Button
-                          type="button"
-                          variant={order.done ? 'outline' : 'special'}
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => toggleDone(order)}
-                          aria-label={`${order.done ? 'Batalkan selesai' : 'Tandai selesai'} pesanan ${order.customer_name}`}
-                        >
-                          <CheckIcon />
-                          {order.done ? 'Batal selesai' : 'Pesanan selesai'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => editOrder(order.id)}
-                          aria-label={`Ubah pesanan ${order.customer_name}`}
-                        >
-                          <Pencil /> Ubah
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() =>
-                            setPendingDelete({
-                              id: order.id,
-                              customer: order.customer_name,
-                            })
-                          }
-                          aria-label={`Hapus pesanan ${order.customer_name}`}
-                        >
-                          <Trash2 /> Hapus
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })}
+                {sortedOrders.map((order) => renderOrderCard(order))}
               </ul>
             ) : (
-              <div className="duo-card overflow-hidden rounded-2xl border-2">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[60rem] border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-muted text-muted-foreground text-left text-xs font-extrabold uppercase">
-                        <th scope="col" className="px-3 py-2">
-                          Pelanggan
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Penjual
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Pangsit
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Rasa
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Teh
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Total
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Catatan
-                        </th>
-                        <th scope="col" className="px-3 py-2">
-                          Waktu
-                        </th>
-                        <th scope="col" className="px-3 py-2 text-right">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((order) => (
-                        <tr
-                          key={order.id}
-                          className={cn(
-                            'border-border border-t-2',
-                            order.done
-                              ? 'bg-pastel-green/70 text-emerald-950 dark:bg-emerald-500/15 dark:text-emerald-100'
-                              : 'bg-card even:bg-muted/30',
-                          )}
-                        >
-                          <td className="px-3 py-2 font-extrabold">
-                            <span className="flex items-center gap-1.5">
-                              {order.done && (
-                                <CheckIcon className="size-3.5 shrink-0 text-emerald-700 dark:text-emerald-300" />
-                              )}
-                              {order.customer_name}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 font-semibold">
-                            {order.seller}
-                          </td>
-                          <td className="px-3 py-2 tabular-nums">
-                            {order.food_quantity}
-                          </td>
-                          <td className="px-3 py-2">
-                            {order.food_flavors.length ? (
-                              <span className="flex flex-wrap gap-1">
-                                {flavorGroups(order.food_flavors).map(
-                                  (group) => (
-                                    <span
-                                      key={group.entry}
-                                      className="inline-flex items-center gap-1"
-                                    >
-                                      <FlavorChip entry={group.entry} />
-                                      <span className="text-xs font-bold">
-                                        ×{group.count}
-                                      </span>
-                                    </span>
-                                  ),
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 tabular-nums">
-                            {order.drink_quantity}
-                          </td>
-                          <td className="px-3 py-2 font-bold tabular-nums">
-                            {rupiah.format(order.price)}
-                          </td>
-                          <td className="text-muted-foreground max-w-56 truncate px-3 py-2">
-                            {order.note ?? '—'}
-                          </td>
-                          <td className="text-muted-foreground px-3 py-2 text-xs font-medium whitespace-nowrap">
-                            {clock(order.created_at)}
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className="flex justify-end gap-1">
-                              <Button
-                                type="button"
-                                variant={order.done ? 'outline' : 'special'}
-                                size="xs"
-                                disabled={busy}
-                                onClick={() => toggleDone(order)}
-                                aria-label={`${order.done ? 'Batalkan selesai' : 'Tandai selesai'} pesanan ${order.customer_name}`}
-                              >
-                                <CheckIcon />
-                                {order.done ? 'Batal' : 'Selesai'}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-xs"
-                                disabled={busy}
-                                onClick={() => editOrder(order.id)}
-                                aria-label={`Ubah pesanan ${order.customer_name}`}
-                              >
-                                <Pencil />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon-xs"
-                                disabled={busy}
-                                onClick={() =>
-                                  setPendingDelete({
-                                    id: order.id,
-                                    customer: order.customer_name,
-                                  })
-                                }
-                                aria-label={`Hapus pesanan ${order.customer_name}`}
-                              >
-                                <Trash2 />
-                              </Button>
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              renderOrdersTable(sortedOrders)
             )}
           </>
         )}
       </section>
 
-      <AlertDialog
-        open={!!pendingDelete}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogTitle>Hapus pesanan?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Pesanan {pendingDelete?.customer} akan dihapus permanen. Tindakan
-            ini tidak dapat dibatalkan.
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button type="button" variant="outline" disabled={busy}>
-                Batal
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={busy}
-                onClick={() => {
-                  if (pendingDelete) {
-                    void deleteOrder(pendingDelete.id);
-                  }
-                  setPendingDelete(null);
-                }}
-              >
-                <Trash2 /> Hapus
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canManage && (
+        <AlertDialog
+          open={!!pendingDelete}
+          onOpenChange={(open) => {
+            if (!open) setPendingDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogTitle>Hapus pesanan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pesanan {pendingDelete?.customer} akan dihapus permanen. Tindakan
+              ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+            <AlertDialogFooter>
+              <AlertDialogCancel asChild>
+                <Button type="button" variant="outline" disabled={busy}>
+                  Batal
+                </Button>
+              </AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() => {
+                    if (pendingDelete) {
+                      void deleteOrder(pendingDelete.id);
+                    }
+                    setPendingDelete(null);
+                  }}
+                >
+                  <Trash2 /> Hapus
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </main>
   );
 }

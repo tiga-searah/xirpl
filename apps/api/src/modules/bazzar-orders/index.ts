@@ -1,7 +1,7 @@
 import { bazzarOrdersTable, db } from '@xirpl/db';
 import { desc, eq } from 'drizzle-orm';
 import Elysia from 'elysia';
-import { requireBazzar } from '../auth/middleware';
+import { requireAuth, requireBazzar } from '../auth/middleware';
 import { normalizeFlavors } from './flavors';
 import { BazzarOrdersModel } from './model';
 
@@ -32,7 +32,7 @@ export const bazzarOrders = new Elysia({
   prefix: '/bazzar-orders',
   tags: ['Bazzar Orders'],
 })
-  .use(requireBazzar)
+  .use(requireAuth)
   .get(
     '/',
     async ({ status }) => {
@@ -75,6 +75,7 @@ export const bazzarOrders = new Elysia({
       },
     },
   )
+  .use(requireBazzar)
   .post(
     '/',
     async ({ body, status }) => {

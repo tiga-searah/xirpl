@@ -1,14 +1,16 @@
 'use client';
 
+import { useUser } from '@fe/hooks/use-user';
 import { cn } from '@fe/lib/utils';
 import { SITE_NAME } from '@xirpl/shared';
+import { Button } from '@xirpl/shared/components/ui/button';
 import {
   AlbumIcon,
   AlignRightIcon,
   BookOpenCheckIcon,
   CalendarDaysIcon,
-  ClipboardListIcon,
   ClipboardCheckIcon,
+  ClipboardListIcon,
   Code2Icon,
   HomeIcon,
   LayoutDashboardIcon,
@@ -18,8 +20,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { useUser } from '@fe/hooks/use-user';
-import { Button } from '@xirpl/shared/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -90,9 +90,6 @@ export default function AppSidebar() {
   const path = usePathname();
   const { user } = useUser();
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
-  const canManageBazzar =
-    user?.id === 'd1f8f009-f157-49eb-abc8-44ae6a55a409' ||
-    user?.role === 'developer';
 
   // Close after navigation commits — closing on click races the route
   // transition and the sheet re-pops mid-render.
@@ -167,7 +164,7 @@ export default function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-        {canManageBazzar && (
+        {!!user && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-extrabold tracking-widest uppercase">
               Bazzar

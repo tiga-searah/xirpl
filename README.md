@@ -104,7 +104,7 @@ bun run dev:web      # Web only
 - **Leaderboard** — streak rankings
 - **Storage** — file uploads to S3-compatible storage
 - **Notifications** — authenticated `GET`, `POST`, `PATCH`, `DELETE` at `/notifications/subscriptions`; browser-scoped check-in reminders
-- **Bazzar Orders** — event bazzar orders tracking (+ web interface at `/bazzar-orders`), restricted to UUID `d1f8f009-f157-49eb-abc8-44ae6a55a409` or `developer` role
+- **Bazzar Orders** — event bazzar orders tracking (+ web interface at `/bazzar-orders`), viewable by authenticated users, management restricted to UUID `d1f8f009-f157-49eb-abc8-44ae6a55a409` or `developer` role
 
 ## Check-in push reminders
 

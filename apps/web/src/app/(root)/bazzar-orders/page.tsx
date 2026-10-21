@@ -708,7 +708,7 @@ export default function BazzarOrdersPage() {
                 {
                   label: 'Pangsit',
                   value: foodCount,
-                  note: 'goreng',
+                  note: 'porsi',
                   Icon: UtensilsCrossed,
                   tone: 'border-orange-300 bg-orange-100/80 text-orange-900',
                 },

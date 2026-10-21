@@ -19,9 +19,7 @@ export const ADMIN_ROLES: [
   'developer',
   'teacher',
   'homeroom_teacher',
-  'leader',
-  'vice_leader',
-] = ['developer', 'teacher', 'homeroom_teacher', 'leader', 'vice_leader'];
+] = ['developer', 'teacher', 'homeroom_teacher'];
 export const DEV_ROLE = 'developer';
 
 /**

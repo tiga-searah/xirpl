@@ -76,11 +76,17 @@ const FLAVOR_LABEL: Record<string, string> = {
   pedas: 'Pedas',
   balado: 'Balado',
   manis: 'Manis',
+  original: 'Original',
 };
 const FLAVOR_STYLE: Record<string, string> = {
-  Pedas: 'border-red-300 bg-red-100 text-red-800',
-  Balado: 'border-orange-300 bg-orange-100 text-orange-800',
-  Manis: 'border-pink-300 bg-pink-100 text-pink-800',
+  Pedas:
+    'border-red-300 bg-red-100 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300',
+  Balado:
+    'border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300',
+  Manis:
+    'border-pink-300 bg-pink-100 text-pink-800 dark:border-pink-900 dark:bg-pink-950/40 dark:text-pink-300',
+  Original:
+    'border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200',
 };
 type GroupBy = 'none' | 'students' | 'item';
 type SortKey =
@@ -199,39 +205,56 @@ const resizeFlavors = (flavors: FlavorRow[], quantity: number): FlavorRow[] =>
     (_, index) => flavors[index] ?? { id: flavorRowId++, picked: [] },
   );
 
-const toPayloadFlavor = (picked: string[]) =>
-  FLAVORS.filter((flavor) => picked.includes(flavor)).join('+');
+const toPayloadFlavor = (picked: string[]) => {
+  const selected = FLAVORS.filter((flavor) => picked.includes(flavor));
+  return selected.length > 0 ? selected.join('+') : 'original';
+};
 
-const flavorLabel = (entry: string) =>
-  entry
+const flavorLabel = (entry: string) => {
+  if (!entry || entry === 'original') return 'Original';
+  return entry
     .split('+')
     .map((flavor) => FLAVOR_LABEL[flavor] ?? flavor)
     .join(' + ');
+};
 
 /** Group identical picks so the summary reads "Pedas ×2" not "Pedas, Pedas". */
-function flavorGroups(entries: string[]): { entry: string; count: number }[] {
+function flavorGroups(
+  entries: string[],
+  foodQuantity?: number,
+): { entry: string; count: number }[] {
   const groups = new Map<string, { entry: string; count: number }>();
+  let recordedCount = 0;
   for (const entry of entries) {
-    const group = groups.get(entry);
+    const key = !entry || entry === 'original' ? 'original' : entry;
+    const group = groups.get(key);
     if (group) group.count += 1;
-    else groups.set(entry, { entry, count: 1 });
+    else groups.set(key, { entry: key, count: 1 });
+    recordedCount += 1;
+  }
+  if (foodQuantity && foodQuantity > recordedCount) {
+    const remaining = foodQuantity - recordedCount;
+    const group = groups.get('original');
+    if (group) group.count += remaining;
+    else groups.set('original', { entry: 'original', count: remaining });
   }
   return [...groups.values()];
 }
 
-/** `entry` is the raw stored value: "pedas" or "pedas+manis". */
+/** `entry` is the raw stored value: "pedas", "original", or "pedas+manis". */
 function FlavorChip({ entry }: { entry: string }) {
+  const isMix = entry.includes('+');
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-bold',
-        entry.includes('+')
-          ? 'border-purple-300 bg-purple-100 text-purple-800'
-          : (FLAVOR_STYLE[FLAVOR_LABEL[entry]] ??
+        isMix
+          ? 'border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-900 dark:bg-purple-950/40 dark:text-purple-300'
+          : (FLAVOR_STYLE[FLAVOR_LABEL[entry] ?? 'Original'] ??
               'border-border bg-muted text-muted-foreground'),
       )}
     >
-      {entry.includes('+') && <Split className="size-3" />}
+      {isMix && <Split className="size-3" />}
       {flavorLabel(entry)}
     </span>
   );
@@ -635,10 +658,6 @@ export default function BazzarOrdersPage() {
       return;
     }
     const flavors = form.flavors.slice(0, form.food_quantity);
-    if (flavors.some((row) => row.picked.length === 0)) {
-      setError('Setiap pangsit goreng wajib dipilih minimal satu rasa.');
-      return;
-    }
 
     await withBusy(async () => {
       const body = {
@@ -675,7 +694,14 @@ export default function BazzarOrdersPage() {
         flavors: resizeFlavors(
           order.food_flavors.map((entry) => ({
             id: flavorRowId++,
-            picked: entry.split('+'),
+            picked:
+              !entry || entry === 'original'
+                ? []
+                : entry
+                    .split('+')
+                    .filter((f) =>
+                      FLAVORS.includes(f as (typeof FLAVORS)[number]),
+                    ),
           })),
           order.food_quantity,
         ),
@@ -714,7 +740,7 @@ export default function BazzarOrdersPage() {
     });
   }
   const renderOrderCard = (order: BazzarOrder) => {
-    const groups = flavorGroups(order.food_flavors);
+    const groups = flavorGroups(order.food_flavors, order.food_quantity);
     return (
       <li
         key={order.id}
@@ -900,9 +926,12 @@ export default function BazzarOrdersPage() {
                   {order.food_quantity}
                 </td>
                 <td className="px-3 py-2">
-                  {order.food_flavors.length ? (
+                  {order.food_quantity > 0 ? (
                     <span className="flex flex-wrap gap-1">
-                      {flavorGroups(order.food_flavors).map((group) => (
+                      {flavorGroups(
+                        order.food_flavors,
+                        order.food_quantity,
+                      ).map((group) => (
                         <span
                           key={group.entry}
                           className="inline-flex items-center gap-1"
@@ -1081,7 +1110,7 @@ export default function BazzarOrdersPage() {
                 <p className="text-sm font-bold">
                   Varian rasa per pangsit{' '}
                   <span className="text-muted-foreground font-medium">
-                    (boleh lebih dari satu = mix)
+                    (kosongkan untuk Original, boleh lebih dari satu = mix)
                   </span>
                 </p>
                 {form.food_quantity === 0 && (
@@ -1132,6 +1161,11 @@ export default function BazzarOrdersPage() {
                         <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-extrabold text-purple-800 max-sm:order-2">
                           <Split className="size-3" />
                           {flavorLabel(toPayloadFlavor(row.picked))} · mix
+                        </span>
+                      )}
+                      {row.picked.length === 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-extrabold text-slate-700 max-sm:order-2 dark:bg-slate-800 dark:text-slate-300">
+                          Original
                         </span>
                       )}
                     </div>

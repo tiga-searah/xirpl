@@ -23,8 +23,8 @@
     "db:seed": "bun run --cwd packages/db db:seed"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.6",
-    "turbo": "^2.10.7",
+    "@biomejs/biome": "^2.6.2",
+    "turbo": "^2.11.10",
     "typescript": "^7.0.2"
   },
   "workspaces": [

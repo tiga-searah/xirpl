@@ -26,6 +26,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@fe/components/ui/dropdown-menu';
 import { useStudents } from '@fe/hooks/use-students';
@@ -107,7 +110,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'seller', label: 'Penjual' },
   { key: 'food_quantity', label: 'Pangsit' },
   { key: 'food_flavors', label: 'Rasa' },
-  { key: 'drink_quantity', label: 'Teh' },
+  { key: 'drink_quantity', label: 'Lemon Tea' },
   { key: 'price', label: 'Total' },
   { key: 'note', label: 'Catatan' },
   { key: 'done', label: 'Status' },
@@ -119,10 +122,29 @@ const SORT_LABELS: Record<SortKey, string> = {
   seller: 'Penjual',
   food_quantity: 'Pangsit',
   food_flavors: 'Rasa',
-  drink_quantity: 'Teh',
+  drink_quantity: 'Lemon Tea',
   price: 'Total',
   note: 'Catatan',
   done: 'Status',
+};
+type StudentSortKey = 'orders' | 'revenue' | 'name' | 'nis' | 'food' | 'drink';
+
+const STUDENT_SORT_OPTIONS: { key: StudentSortKey; label: string }[] = [
+  { key: 'orders', label: 'Jumlah Pesanan' },
+  { key: 'revenue', label: 'Total Penjualan' },
+  { key: 'name', label: 'Nama Siswa' },
+  { key: 'nis', label: 'Nomor NIS' },
+  { key: 'food', label: 'Pangsit' },
+  { key: 'drink', label: 'Lemon Tea' },
+];
+
+const STUDENT_SORT_LABELS: Record<StudentSortKey, string> = {
+  orders: 'Jumlah Pesanan',
+  revenue: 'Total Penjualan',
+  name: 'Nama Siswa',
+  nis: 'Nomor NIS',
+  food: 'Pangsit',
+  drink: 'Lemon Tea',
 };
 
 const TABLE_COLUMNS: {
@@ -133,7 +155,7 @@ const TABLE_COLUMNS: {
   { key: 'seller', label: 'Penjual' },
   { key: 'food_quantity', label: 'Pangsit' },
   { key: 'food_flavors', label: 'Rasa' },
-  { key: 'drink_quantity', label: 'Teh' },
+  { key: 'drink_quantity', label: 'Lemon Tea' },
   { key: 'price', label: 'Total' },
   { key: 'note', label: 'Catatan' },
   { key: 'created_at', label: 'Waktu' },
@@ -145,7 +167,7 @@ function ActionTooltip({
   children,
 }: {
   category: string;
-  label: string;
+  label: React.ReactNode;
   children: React.ReactElement;
 }) {
   return (
@@ -157,7 +179,11 @@ function ActionTooltip({
         className="flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1 text-center font-medium shadow-md"
       >
         <span className="font-extrabold text-xs">{category}</span>
-        <span className="text-[11px] opacity-80">{label}</span>
+        {typeof label === 'string' ? (
+          <span className="text-[11px] opacity-80">{label}</span>
+        ) : (
+          label
+        )}
       </TooltipContent>
     </Tooltip>
   );
@@ -370,6 +396,9 @@ export default function BazzarOrdersPage() {
   const [groupBy, setGroupBy] = useState<GroupBy>('none');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [studentSortKey, setStudentSortKey] =
+    useState<StudentSortKey>('orders');
+  const [studentSortDir, setStudentSortDir] = useState<SortDir>('desc');
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
@@ -541,8 +570,8 @@ export default function BazzarOrdersPage() {
     return [
       {
         id: 'food',
-        title: 'Pangsit Goreng',
-        subtitle: 'Varian: Pedas, Balado, Manis',
+        title: 'Pangsit Sitt',
+        subtitle: 'Rp5.000/porsi · Varian: Pedas, Balado, Manis, Original',
         icon: UtensilsCrossed,
         orders: foodOrders,
         summary: {
@@ -555,8 +584,8 @@ export default function BazzarOrdersPage() {
       },
       {
         id: 'drink',
-        title: 'Lemon Tea Mager',
-        subtitle: 'Minuman dingin segar',
+        title: 'Es Lemon Tea Mager',
+        subtitle: 'Rp5.000/cup · Minuman dingin segar',
         icon: Coffee,
         orders: drinkOrders,
         summary: {
@@ -603,6 +632,7 @@ export default function BazzarOrdersPage() {
         id: `student-${st.name}`,
         title: st.name,
         subtitle: st.nis ? `NIS: ${st.nis}` : 'Penjual',
+        nis: st.nis,
         icon: Users,
         orders: stOrders,
         summary: {
@@ -616,15 +646,36 @@ export default function BazzarOrdersPage() {
     });
 
     return result.sort((a, b) => {
-      const aHas = a.summary.orderCount > 0 ? 1 : 0;
-      const bHas = b.summary.orderCount > 0 ? 1 : 0;
-      if (bHas !== aHas) return bHas - aHas;
-      if (b.summary.orderCount !== a.summary.orderCount) {
-        return b.summary.orderCount - a.summary.orderCount;
+      let cmp = 0;
+      switch (studentSortKey) {
+        case 'name':
+          cmp = a.title.localeCompare(b.title, 'id-ID');
+          break;
+        case 'nis': {
+          const nisA = a.nis ?? 999999;
+          const nisB = b.nis ?? 999999;
+          cmp = nisA - nisB;
+          break;
+        }
+        case 'orders':
+          cmp = a.summary.orderCount - b.summary.orderCount;
+          break;
+        case 'revenue':
+          cmp = a.summary.totalPrice - b.summary.totalPrice;
+          break;
+        case 'food':
+          cmp = a.summary.foodCount - b.summary.foodCount;
+          break;
+        case 'drink':
+          cmp = a.summary.drinkCount - b.summary.drinkCount;
+          break;
       }
-      return a.title.localeCompare(b.title, 'id-ID');
+      if (cmp === 0) {
+        return a.title.localeCompare(b.title, 'id-ID');
+      }
+      return studentSortDir === 'asc' ? cmp : -cmp;
     });
-  }, [students, orders, sortedOrders]);
+  }, [students, orders, sortedOrders, studentSortKey, studentSortDir]);
 
   const activeGroups =
     groupBy === 'item'
@@ -654,7 +705,9 @@ export default function BazzarOrdersPage() {
       return;
     }
     if (form.food_quantity + form.drink_quantity === 0) {
-      setError('Isi minimal satu pangsit goreng atau satu Lemon Tea Mager.');
+      setError(
+        'Isi minimal satu porsi Pangsit Sitt atau satu cup Es Lemon Tea Mager.',
+      );
       return;
     }
     const flavors = form.flavors.slice(0, form.food_quantity);
@@ -777,15 +830,15 @@ export default function BazzarOrdersPage() {
         <dl className="mt-3 grid grid-cols-2 gap-2 pl-2 text-sm">
           <div>
             <dt className="text-muted-foreground text-xs font-bold uppercase">
-              Pangsit
+              Pangsit Sitt
             </dt>
-            <dd className="font-extrabold">{order.food_quantity} pcs</dd>
+            <dd className="font-extrabold">{order.food_quantity} porsi</dd>
           </div>
           <div>
             <dt className="text-muted-foreground text-xs font-bold uppercase">
-              Lemon tea
+              Es Lemon Tea Mager
             </dt>
-            <dd className="font-extrabold">{order.drink_quantity} gelas</dd>
+            <dd className="font-extrabold">{order.drink_quantity} cup</dd>
           </div>
         </dl>
 
@@ -1016,7 +1069,7 @@ export default function BazzarOrdersPage() {
       <PageHero
         pill="Kantin bazzar"
         title="Pesanan Bazzar"
-        desc="Pangsit goreng & Lemon Tea Mager"
+        desc="Pangsit Sitt (Rp5.000/porsi) & Es Lemon Tea Mager (Rp5.000/cup)"
       >
         <XiRplMascot
           pose="cheer"
@@ -1087,7 +1140,7 @@ export default function BazzarOrdersPage() {
 
             <div className="grid gap-3 rounded-2xl border-2 border-dashed p-4 sm:col-span-2 sm:grid-cols-[10rem_1fr]">
               <label className="grid content-start gap-1.5 font-bold">
-                Pangsit Goreng
+                Pangsit Sitt
                 <input
                   type="number"
                   min="0"
@@ -1108,14 +1161,14 @@ export default function BazzarOrdersPage() {
 
               <div className="space-y-2">
                 <p className="text-sm font-bold">
-                  Varian rasa per pangsit{' '}
+                  Varian rasa per porsi Pangsit Sitt{' '}
                   <span className="text-muted-foreground font-medium">
                     (kosongkan untuk Original, boleh lebih dari satu = mix)
                   </span>
                 </p>
                 {form.food_quantity === 0 && (
                   <p className="text-muted-foreground rounded-xl border-2 border-dashed p-3 text-sm">
-                    Isi jumlah pangsit dulu untuk memilih rasa.
+                    Isi jumlah porsi dulu untuk memilih rasa.
                   </p>
                 )}
                 <div className="grid max-h-56 gap-2 overflow-y-auto pr-1">
@@ -1175,7 +1228,7 @@ export default function BazzarOrdersPage() {
             </div>
 
             <label className="grid gap-1.5 font-bold">
-              Lemon Tea Mager
+              Es Lemon Tea Mager
               <input
                 type="number"
                 min="0"
@@ -1268,8 +1321,38 @@ export default function BazzarOrdersPage() {
             <div className="border-border bg-card flex rounded-xl border-2 p-1">
               <DropdownMenu>
                 <ActionTooltip
-                  category="Sort"
-                  label={`${SORT_LABELS[sortKey]} (${sortDir.toUpperCase()})`}
+                  category="Urutkan"
+                  label={
+                    groupBy === 'students' ? (
+                      <div className="flex flex-col items-center gap-0.5 text-[11px] opacity-90">
+                        <span className="inline-flex items-center gap-1">
+                          <span>{STUDENT_SORT_LABELS[studentSortKey]}</span>
+                          {studentSortDir === 'asc' ? (
+                            <ArrowUp className="size-3 text-primary shrink-0" />
+                          ) : (
+                            <ArrowDown className="size-3 text-primary shrink-0" />
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span>{SORT_LABELS[sortKey]}</span>
+                          {sortDir === 'asc' ? (
+                            <ArrowUp className="size-3 text-primary shrink-0" />
+                          ) : (
+                            <ArrowDown className="size-3 text-primary shrink-0" />
+                          )}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] opacity-90">
+                        <span>{SORT_LABELS[sortKey]}</span>
+                        {sortDir === 'asc' ? (
+                          <ArrowUp className="size-3 text-primary shrink-0" />
+                        ) : (
+                          <ArrowDown className="size-3 text-primary shrink-0" />
+                        )}
+                      </span>
+                    )
+                  }
                 >
                   <DropdownMenuTrigger asChild>
                     <button
@@ -1282,37 +1365,115 @@ export default function BazzarOrdersPage() {
                   </DropdownMenuTrigger>
                 </ActionTooltip>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Urutkan berdasarkan</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    value={sortKey}
-                    onValueChange={(val) => setSortKey(val as SortKey)}
-                  >
-                    {SORT_OPTIONS.map((opt) => (
-                      <DropdownMenuRadioItem key={opt.key} value={opt.key}>
-                        {opt.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Arah urutan</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    value={sortDir}
-                    onValueChange={(val) => setSortDir(val as SortDir)}
-                  >
-                    <DropdownMenuRadioItem value="asc">
-                      Menaik (A-Z, 0-9)
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="desc">
-                      Menurun (Z-A, 9-0)
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
+                  {groupBy === 'students' ? (
+                    <>
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          Urutkan pesanan
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent sideOffset={8} className="w-56">
+                          <DropdownMenuLabel>
+                            Urutkan berdasarkan
+                          </DropdownMenuLabel>
+                          <DropdownMenuRadioGroup
+                            value={sortKey}
+                            onValueChange={(val) => setSortKey(val as SortKey)}
+                          >
+                            {SORT_OPTIONS.map((opt) => (
+                              <DropdownMenuRadioItem
+                                key={opt.key}
+                                value={opt.key}
+                              >
+                                {opt.label}
+                              </DropdownMenuRadioItem>
+                            ))}
+                          </DropdownMenuRadioGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>Arah urutan</DropdownMenuLabel>
+                          <DropdownMenuRadioGroup
+                            value={sortDir}
+                            onValueChange={(val) => setSortDir(val as SortDir)}
+                          >
+                            <DropdownMenuRadioItem value="asc">
+                              Menaik (A-Z, 0-9)
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="desc">
+                              Menurun (Z-A, 9-0)
+                            </DropdownMenuRadioItem>
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Urutkan siswa</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={studentSortKey}
+                        onValueChange={(val) => {
+                          const nextKey = val as StudentSortKey;
+                          setStudentSortKey(nextKey);
+                          setStudentSortDir(
+                            nextKey === 'name' || nextKey === 'nis'
+                              ? 'asc'
+                              : 'desc',
+                          );
+                        }}
+                      >
+                        {STUDENT_SORT_OPTIONS.map((opt) => (
+                          <DropdownMenuRadioItem key={opt.key} value={opt.key}>
+                            {opt.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Arah urutan siswa</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={studentSortDir}
+                        onValueChange={(val) =>
+                          setStudentSortDir(val as SortDir)
+                        }
+                      >
+                        <DropdownMenuRadioItem value="asc">
+                          Menaik (A-Z, 0-9)
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="desc">
+                          Menurun (Z-A, 9-0)
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuLabel>Urutkan berdasarkan</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={sortKey}
+                        onValueChange={(val) => setSortKey(val as SortKey)}
+                      >
+                        {SORT_OPTIONS.map((opt) => (
+                          <DropdownMenuRadioItem key={opt.key} value={opt.key}>
+                            {opt.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Arah urutan</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={sortDir}
+                        onValueChange={(val) => setSortDir(val as SortDir)}
+                      >
+                        <DropdownMenuRadioItem value="asc">
+                          Menaik (A-Z, 0-9)
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="desc">
+                          Menurun (Z-A, 9-0)
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
             {/* [None|Students|Item] */}
             <div className="border-border bg-card flex rounded-xl border-2 p-1">
-              <ActionTooltip category="Group" label="None">
+              <ActionTooltip category="Kelompokkan" label="Tidak ada">
                 <button
                   type="button"
                   aria-pressed={groupBy === 'none'}
@@ -1329,12 +1490,12 @@ export default function BazzarOrdersPage() {
                 </button>
               </ActionTooltip>
 
-              <ActionTooltip category="Group" label="Students">
+              <ActionTooltip category="Kelompokkan" label="Murid">
                 <button
                   type="button"
                   aria-pressed={groupBy === 'students'}
                   onClick={() => setGroupBy('students')}
-                  aria-label="Grup berdasarkan siswa"
+                  aria-label="Grup berdasarkan murid"
                   className={cn(
                     'flex items-center justify-center rounded-lg p-1.5 text-sm font-bold transition-colors',
                     groupBy === 'students'
@@ -1346,7 +1507,7 @@ export default function BazzarOrdersPage() {
                 </button>
               </ActionTooltip>
 
-              <ActionTooltip category="Group" label="Item">
+              <ActionTooltip category="Kelompokkan" label="Item">
                 <button
                   type="button"
                   aria-pressed={groupBy === 'item'}
@@ -1366,7 +1527,7 @@ export default function BazzarOrdersPage() {
 
             {/* [Grid|Table] */}
             <div className="border-border bg-card flex rounded-xl border-2 p-1">
-              <ActionTooltip category="View" label="Grid">
+              <ActionTooltip category="Tampilkan" label="Grid">
                 <button
                   type="button"
                   aria-pressed={view === 'list'}
@@ -1383,7 +1544,7 @@ export default function BazzarOrdersPage() {
                 </button>
               </ActionTooltip>
 
-              <ActionTooltip category="View" label="Table">
+              <ActionTooltip category="Tampilkan" label="Tabel">
                 <button
                   type="button"
                   aria-pressed={view === 'table'}
@@ -1423,16 +1584,16 @@ export default function BazzarOrdersPage() {
                   tone: 'border-brand-blue/40 bg-pastel-blue/70 text-brand-navy',
                 },
                 {
-                  label: 'Pangsit',
+                  label: 'Pangsit Sitt',
                   value: foodCount,
                   note: 'porsi',
                   Icon: UtensilsCrossed,
                   tone: 'border-orange-300 bg-orange-100/80 text-orange-900',
                 },
                 {
-                  label: 'Lemon Tea',
+                  label: 'Es Lemon Tea Mager',
                   value: drinkCount,
-                  note: 'gelas',
+                  note: 'cup',
                   Icon: Coffee,
                   tone: 'border-emerald-300 bg-pastel-green/80 text-emerald-900',
                 },
@@ -1470,6 +1631,21 @@ export default function BazzarOrdersPage() {
               </div>
             ) : activeGroups ? (
               <div className="space-y-4">
+                {groupBy === 'students' && (
+                  <div className="flex items-center justify-between px-1 text-xs font-semibold text-muted-foreground">
+                    <span>{studentGroups.length} murid</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span>
+                        Urutan murid: {STUDENT_SORT_LABELS[studentSortKey]}
+                      </span>
+                      {studentSortDir === 'asc' ? (
+                        <ArrowUp className="size-3 text-primary shrink-0" />
+                      ) : (
+                        <ArrowDown className="size-3 text-primary shrink-0" />
+                      )}
+                    </span>
+                  </div>
+                )}
                 {activeGroups.map((group) => (
                   <details
                     key={group.id}
@@ -1499,12 +1675,12 @@ export default function BazzarOrdersPage() {
                           </span>
                           {group.summary.foodCount > 0 && (
                             <span className="rounded-lg border border-orange-300 bg-orange-100/80 px-2 py-0.5 text-orange-950 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-200">
-                              {group.summary.foodCount} pangsit
+                              {group.summary.foodCount} porsi
                             </span>
                           )}
                           {group.summary.drinkCount > 0 && (
                             <span className="rounded-lg border border-emerald-300 bg-pastel-green/70 px-2 py-0.5 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
-                              {group.summary.drinkCount} teh
+                              {group.summary.drinkCount} cup
                             </span>
                           )}
                           <span className="rounded-lg border border-primary/30 bg-primary/10 px-2 py-0.5 text-primary">

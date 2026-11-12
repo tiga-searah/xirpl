@@ -51,7 +51,7 @@ RUN bun run --cwd apps/web build
 # runner
 FROM oven/bun:slim AS web
 WORKDIR /app
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3610
+ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3610
 COPY --from=web-build /app/apps/web/.next/standalone .
 COPY --from=web-build /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=web-build /app/apps/web/public ./apps/web/public
@@ -80,7 +80,7 @@ RUN bun run --cwd apps/admin build
 # runner
 FROM oven/bun:slim AS admin
 WORKDIR /app
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3620
+ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3620
 COPY --from=admin-build /app/apps/admin/.next/standalone .
 COPY --from=admin-build /app/apps/admin/.next/static ./apps/admin/.next/static
 CMD ["bun", "apps/admin/server.js"]

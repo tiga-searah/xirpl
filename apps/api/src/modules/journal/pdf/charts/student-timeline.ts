@@ -6,8 +6,10 @@ import { COLORS, FONTS, MODULES, P2, SIZES } from '../theme';
  * with a coloured dot on every day the module was completed, and day numbers
  * underneath. `top` is the student block's top edge in page px.
  */
+export type TimelineDay = number | { day: number; ratio: number };
+
 export const studentTimeline = (
-  modules: { key: string; days: number[] }[],
+  modules: { key: string; days: TimelineDay[] }[],
   days: number,
   top: number,
 ): Chart => {
@@ -28,11 +30,16 @@ export const studentTimeline = (
     const y = ly(track.y + i * track.pitch);
     const done = modules.find((v) => v.key === m.key)?.days ?? [];
     const dots = done
-      .filter((d) => d >= 1 && d <= days)
-      .map(
-        (d) =>
-          `<circle cx="${dx(d).toFixed(2)}" cy="${y.toFixed(2)}" r="${track.dotR}" fill="${m.color}"/>`,
-      )
+      .filter((item) => {
+        const d = typeof item === 'number' ? item : item.day;
+        return d >= 1 && d <= days;
+      })
+      .map((item) => {
+        const d = typeof item === 'number' ? item : item.day;
+        const ratio = typeof item === 'number' ? 1 : item.ratio;
+        const opacity = Math.max(0.25, Math.min(1, ratio)).toFixed(2);
+        return `<circle cx="${dx(d).toFixed(2)}" cy="${y.toFixed(2)}" r="${track.dotR}" fill="${m.color}" fill-opacity="${opacity}"/>`;
+      })
       .join('');
     return (
       `<text x="${moduleLabelX}" y="${(y + moduleLabelDrop).toFixed(2)}" font-family="${FONTS.regular}" font-size="${fontPx(SIZES.moduleLabel)}" fill="${COLORS.ink}">${m.label}</text>` +

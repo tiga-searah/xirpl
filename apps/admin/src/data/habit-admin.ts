@@ -3,6 +3,7 @@ import type { JournalModel } from '@be/modules/journal/model';
 import type { UserModel } from '@be/modules/user/model';
 
 type Student = UserModel['Student'];
+
 import api, { API_URL } from '../lib/api';
 import {
   type Check,
@@ -13,6 +14,7 @@ import {
   levelsByDay,
   type ModuleKey,
   moduleStats,
+  totalScore,
 } from './habit-data';
 
 export type Member = Student;
@@ -46,17 +48,19 @@ type ScoreBucket =
 
 /** Fixed order, so the distribution bars don't follow the server's key order. */
 const BUCKETS = [
-  '0-39',
-  '40-59',
-  '60-79',
-  '80-100',
+  '0-20',
+  '21-40',
+  '41-60',
+  '61-80',
+  '81-100',
 ] as const satisfies readonly ScoreBucket[];
 
 const BUCKET_LABEL: Record<ScoreBucket, string> = {
-  '0-39': '0–39%',
-  '40-59': '40–59%',
-  '60-79': '60–79%',
-  '80-100': '80–100%',
+  '0-20': '0–20',
+  '21-40': '21–40',
+  '41-60': '41–60',
+  '61-80': '61–80',
+  '81-100': '81–100',
 };
 
 // Every member counts as a student, used as dashboard table rows.
@@ -88,7 +92,11 @@ export async function fetchClassSummary(month: Date) {
 
   return {
     score: stats?.average_score ?? 0,
+    totalScore: stats?.total_score ?? 0,
     modules: moduleStats(stats?.average_score_each ?? EMPTY_MODULE_AVERAGES),
+    moduleTotals: moduleStats(stats?.total_score_each ?? EMPTY_MODULE_AVERAGES),
+    studentCount: stats?.student_count ?? 0,
+    elapsedDays: stats?.elapsed_days ?? stats?.scores?.length ?? 1,
     perfect: stats?.completed_days ?? 0,
     streaking: stats?.students_on_streaks ?? 0,
     late: stats?.late_count ?? 0,
@@ -106,7 +114,9 @@ export type ClassSummary = Awaited<ReturnType<typeof fetchClassSummary>>;
 export type MemberRow = {
   member: Member;
   score: number;
+  totalScore: number;
   modules: Record<ModuleKey, number>;
+  moduleTotals?: Record<ModuleKey, number>;
   late: number;
   absent: number;
   present: number;
@@ -137,6 +147,7 @@ export async function fetchMemberRows(
   const checks = new Map<string, CheckStudent>(
     (checkins.data?.data.students ?? []).map((s) => [s.user_id, s]),
   );
+  const elapsedDays = journals.data?.data.elapsed_days ?? 1;
 
   return members.map((member) => {
     const j = scores.get(member.id);
@@ -144,7 +155,10 @@ export async function fetchMemberRows(
     return {
       member,
       score: j?.average_score ?? 0,
+      totalScore: j?.total_score ?? 0,
       modules: moduleStats(j?.average_score_each ?? EMPTY_MODULE_AVERAGES),
+      moduleTotals: moduleStats(j?.total_score_each ?? EMPTY_MODULE_AVERAGES),
+      elapsedDays,
       late: c?.late_count ?? 0,
       absent: c?.miss_count ?? 0,
       present: c?.check_count ?? 0,
@@ -170,7 +184,10 @@ export async function fetchMemberDetail(id: string, month: Date) {
     series: dailySeries(scores),
     levels: levelsByDay(scores),
     score: recap?.average_score ?? 0,
+    totalScore: recap?.total_score ?? totalScore(scores),
     modules: moduleStats(recap?.average_score_each ?? EMPTY_MODULE_AVERAGES),
+    moduleTotals: moduleStats(recap?.total_score_each ?? EMPTY_MODULE_AVERAGES),
+    elapsedDays: recap?.elapsed_days ?? scores.length,
     perfect: scores.filter((s) => s.score === 100).length,
     tracked: scores.length,
     logged: scores.filter((s) => s.score > 0).length,

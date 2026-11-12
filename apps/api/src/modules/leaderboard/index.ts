@@ -26,7 +26,7 @@ export const leaderboard = new Elysia({
       detail: {
         summary: 'Get Habit Leaderboard',
         description:
-          'Get every student ranked by points earned in the given month (25 points per completed module per day, so a perfect day is worth 100), each with their current check-in streak. Defaults to the current month.',
+          'Get every student ranked by points earned in the given month (up to 100 points per day across attendance, prays, sports, and studies), each with their current check-in streak. Defaults to the current month.',
       },
       query: LeaderboardModel.query,
       response: {

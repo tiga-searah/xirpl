@@ -13,7 +13,10 @@ export function HabitJournalSkeleton() {
             <Skeleton className="h-7 w-40 rounded-lg" />
             <div className="mt-6 space-y-5">
               {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="space-y-3 border-t border-border/70 pt-5 first:border-0 first:pt-0 dark:border-border">
+                <div
+                  key={item}
+                  className="space-y-3 border-t border-border/70 pt-5 first:border-0 first:pt-0 dark:border-border"
+                >
                   <Skeleton className="h-5 w-36 rounded-md" />
                   <Skeleton className="h-10 w-full rounded-xl" />
                 </div>

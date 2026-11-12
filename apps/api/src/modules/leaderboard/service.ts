@@ -1,5 +1,6 @@
 import { toDateStr, wibHour } from '@be/lib/utils';
 import { checkinsTable, db, habitJournalsTable } from '@xirpl/db';
+import { computeDayScore } from '@xirpl/shared';
 import { and, between, gte, inArray } from 'drizzle-orm';
 import { User } from '../user/service';
 
@@ -37,25 +38,6 @@ const elapsedDays = (month: string) => {
     : full;
 };
 
-/**
- * Module completion for one day; mirrors `moduleDone` in the journal service:
- * a module only counts when its proof is present.
- */
-const moduleDone = (row: JournalRow | undefined, hasCheckin: boolean) => ({
-  checkins: hasCheckin,
-  prays: !!(
-    row?.prayed_dhuha &&
-    row.prayed_tahajud &&
-    row.prayed_qabliyah_fajr &&
-    row.prayed_badiyah_isya
-  ),
-  sports: row?.did_sport === true && !!row.sport_proof_url,
-  studies:
-    row?.did_study === true &&
-    !!row.study_start_proof_url &&
-    !!row.study_end_proof_url,
-});
-
 export const Leaderboard = {
   /**
    * Students ranked by monthly points — every finished module is worth 25 per
@@ -87,6 +69,8 @@ export const Leaderboard = {
             .select({
               date: checkinsTable.date,
               user_id: checkinsTable.user_id,
+              checked_in_at: checkinsTable.checked_in_at,
+              type: checkinsTable.type,
             })
             .from(checkinsTable)
             .where(
@@ -119,11 +103,20 @@ export const Leaderboard = {
       if (!jByUser.has(r.user_id)) jByUser.set(r.user_id, new Map());
       jByUser.get(r.user_id)!.set(r.date, r);
     }
-    const checkedByUser = new Map<string, Set<string>>();
+    const cByUser = new Map<
+      string,
+      Map<
+        string,
+        {
+          date: string;
+          checked_in_at: Date | null;
+          type: 'school' | 'morning';
+        }
+      >
+    >();
     for (const r of crows) {
-      if (!checkedByUser.has(r.user_id))
-        checkedByUser.set(r.user_id, new Set());
-      checkedByUser.get(r.user_id)!.add(r.date);
+      if (!cByUser.has(r.user_id)) cByUser.set(r.user_id, new Map());
+      cByUser.get(r.user_id)!.set(r.date, r);
     }
     const onTimeByUser = new Map<string, Set<string>>();
     for (const r of hrows) {
@@ -137,17 +130,12 @@ export const Leaderboard = {
 
     const entries = students.map((s) => {
       const journals = jByUser.get(s.id) ?? new Map();
-      const checked = checkedByUser.get(s.id) ?? new Set();
+      const checkins = cByUser.get(s.id) ?? new Map();
       let points = 0;
       for (let d = 1; d <= cap; d++) {
         const date = `${month}-${String(d).padStart(2, '0')}`;
-        const md = moduleDone(journals.get(date), checked.has(date));
-        points +=
-          (Number(md.checkins) +
-            Number(md.prays) +
-            Number(md.sports) +
-            Number(md.studies)) *
-          25;
+        const sScore = computeDayScore(journals.get(date), checkins.get(date));
+        points += sScore.total;
       }
 
       // Same semantics as Checkins.getStreak: consecutive on-time days ending

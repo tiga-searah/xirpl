@@ -1,10 +1,11 @@
 'use client';
 
-import { fileUrl } from '@fe/lib/api';
-import { Button } from '@xirpl/shared/components/ui/button';
 import { Checkbox } from '@fe/components/ui/checkbox';
-import { Input } from '@xirpl/shared/components/ui/input';
+import { fileUrl } from '@fe/lib/api';
 import { cn } from '@fe/lib/utils';
+import { Button } from '@xirpl/shared/components/ui/button';
+import { Input } from '@xirpl/shared/components/ui/input';
+import type { LucideIcon } from 'lucide-react';
 import {
   CheckIcon,
   ClockIcon,
@@ -16,22 +17,23 @@ import {
   UploadIcon,
   XIcon,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { AnimatePresence, motion as m } from 'motion/react';
 import type { ReactNode } from 'react';
-import type { UploadProgress } from './journal';
-import { type Journal, type Check, type ModuleKey } from '../../../../data/habit-data';
 import {
-  IBADAH,
-  SPORT_TYPES,
   attendanceCopy,
   attendanceWindow,
+  type Check,
   checkinAt,
   fmtTime,
+  IBADAH,
   isLateCheck,
   isWakeDay,
+  type Journal,
   lateLabel,
+  type ModuleKey,
+  SPORT_TYPES,
 } from '../../../../data/habit-data';
+import type { UploadProgress } from './journal';
 import { InfoHint } from './widgets';
 
 /** Instant visual feedback: a check that springs in when something is logged. */
@@ -363,7 +365,12 @@ export function JournalFields({
   selected: Date;
   now: Date;
   check: Check | null;
-  status: { ibadah: boolean; hadir: boolean; olahraga: boolean; belajar: boolean };
+  status: {
+    ibadah: boolean;
+    hadir: boolean;
+    olahraga: boolean;
+    belajar: boolean;
+  };
   update: (fn: (prev: Journal) => Journal) => void;
   pickPhoto: (
     file: File | undefined,
@@ -383,7 +390,7 @@ export function JournalFields({
         title="Ibadah"
         tone="ibadah"
         index={0}
-        info="Centang tiap salat sunah yang kamu kerjakan hari ini. Modul dihitung selesai hanya kalau keempatnya tercentang."
+        info="Centang tiap salat sunah yang kamu kerjakan hari ini: Salat Duha (5 poin), Salat Tahajud (7 poin), Salat Qobliyah Subuh (4 poin), dan Salat Ba'diah Isya (4 poin). Total maksimal 20 poin."
         done={status.ibadah}
         reduce={reduce}
         first
@@ -433,8 +440,8 @@ export function JournalFields({
         index={1}
         info={
           isWakeDay(selected)
-            ? 'Sabtu, Minggu, dan hari libur nasional modul ini jadi Bangun Pagi: tekan tombolnya paling lambat 06:00. Lewat jam itu tetap tercatat, tapi berstatus kesiangan, kesorean setelah 15:00, kemalaman setelah 18:00, dan semuanya memutus streak.'
-            : 'Tekan tombolnya untuk absen. Dibuka 06:00, dan lewat 07:00 tercatat terlambat sehingga streak putus. Waktu absen ikut tersimpan.'
+            ? 'Bangun Pagi bernilai maksimal 30 poin (sebelum 06:00). Berkurang 1 poin tiap jam keterlambatan (06:00-07:00 bernilai 29 poin, 07:00-08:00 bernilai 28 poin, dan seterusnya).'
+            : 'Kehadiran bernilai maksimal 30 poin (sebelum 07:00). Berkurang 1 poin tiap jam keterlambatan (07:00-08:00 bernilai 29 poin, 08:00-09:00 bernilai 28 poin, dan seterusnya).'
         }
         done={status.hadir}
         reduce={reduce}
@@ -451,7 +458,10 @@ export function JournalFields({
             >
               {isLateCheck(check) ? lateLabel(checkedAt) : copy.ok}
             </span>
-            <span className="text-muted-foreground"> pada {fmtTime(checkedAt)}</span>
+            <span className="text-muted-foreground">
+              {' '}
+              pada {fmtTime(checkedAt)}
+            </span>
           </p>
         )}
         <Button
@@ -495,7 +505,7 @@ export function JournalFields({
         title="Olahraga"
         tone="olahraga"
         index={2}
-        info="Jawab Ya lalu isi jenis, durasi, dan foto bukti. Modul dihitung selesai setelah fotonya masuk. Jawab Tidak tetap dicatat beserta alasannya, tapi tidak menambah skor hari itu."
+        info="Maksimal 25 poin: Olahraga (Ya=3 poin, Tidak=1 poin), Jenis olahraga (5 poin), Durasi (5 poin), Bukti foto (12 poin), atau Alasan jika tidak olahraga (2 poin). Tiap field menambah poin secara langsung."
         done={status.olahraga}
         reduce={reduce}
       >
@@ -533,11 +543,18 @@ export function JournalFields({
                 }
                 className="h-9 w-full cursor-pointer rounded-lg border border-border bg-card px-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-border dark:bg-secondary dark:text-foreground"
               >
-                <option value="" className="bg-card text-foreground dark:bg-secondary dark:text-foreground">
+                <option
+                  value=""
+                  className="bg-card text-foreground dark:bg-secondary dark:text-foreground"
+                >
                   Pilih jenis olahraga
                 </option>
                 {SPORT_TYPES.map((s) => (
-                  <option key={s} value={s} className="bg-card text-foreground dark:bg-secondary dark:text-foreground">
+                  <option
+                    key={s}
+                    value={s}
+                    className="bg-card text-foreground dark:bg-secondary dark:text-foreground"
+                  >
                     {s}
                   </option>
                 ))}
@@ -556,7 +573,9 @@ export function JournalFields({
                 onChange={(e) =>
                   update((d) => ({
                     ...d,
-                    sport_duration: e.target.value ? Number(e.target.value) : null,
+                    sport_duration: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
                 className="h-9"
@@ -568,7 +587,9 @@ export function JournalFields({
                 label="Mana bukti olahragamu?"
                 photo={data.sport_proof_url}
                 disabled={!editable || busy}
-                uploading={uploading?.field === 'sport_proof_url' ? uploading : null}
+                uploading={
+                  uploading?.field === 'sport_proof_url' ? uploading : null
+                }
                 onPick={(file) =>
                   pickPhoto(file, 'sport_proof_url', (d, sport_proof_url) => ({
                     ...d,
@@ -583,12 +604,17 @@ export function JournalFields({
 
         <Reveal show={data.did_sport === false} reduce={reduce}>
           <div className="pt-4">
-            <Field label="Kenapa kamu tidak berolahraga?" done={!!data.sport_skip_reason?.trim()}>
+            <Field
+              label="Kenapa kamu tidak berolahraga?"
+              done={!!data.sport_skip_reason?.trim()}
+            >
               <Input
                 placeholder="Contoh: saya capek"
                 disabled={!editable}
                 value={data.sport_skip_reason ?? ''}
-                onChange={(e) => update((d) => ({ ...d, sport_skip_reason: e.target.value }))}
+                onChange={(e) =>
+                  update((d) => ({ ...d, sport_skip_reason: e.target.value }))
+                }
                 className="h-9"
               />
             </Field>
@@ -601,7 +627,7 @@ export function JournalFields({
         title="Gemar Belajar"
         tone="belajar"
         index={3}
-        info="Jawab Ya lalu isi topik, media, dan dua foto bukti (mulai dan selesai). Modul baru dihitung selesai setelah keduanya terupload. Jawab Tidak tetap dicatat beserta alasannya, tapi tidak menambah skor hari itu."
+        info="Maksimal 25 poin: Belajar (Ya=3 poin, Tidak=1 poin), Topik (4 poin), Media (4 poin), Bukti mulai (7 poin), Bukti selesai (7 poin), atau Alasan jika tidak belajar (2 poin). Tiap field menambah poin secara langsung."
         done={status.belajar}
         reduce={reduce}
         last
@@ -634,7 +660,9 @@ export function JournalFields({
                 placeholder="Contoh: struktur data - linked list"
                 disabled={!editable}
                 value={data.study_about ?? ''}
-                onChange={(e) => update((d) => ({ ...d, study_about: e.target.value }))}
+                onChange={(e) =>
+                  update((d) => ({ ...d, study_about: e.target.value }))
+                }
                 className="h-9"
               />
             </Field>
@@ -644,7 +672,9 @@ export function JournalFields({
                 placeholder="Contoh: buku paket, video YouTube"
                 disabled={!editable}
                 value={data.study_media ?? ''}
-                onChange={(e) => update((d) => ({ ...d, study_media: e.target.value }))}
+                onChange={(e) =>
+                  update((d) => ({ ...d, study_media: e.target.value }))
+                }
                 className="h-9"
               />
             </Field>
@@ -657,10 +687,14 @@ export function JournalFields({
                 uploading?.field === 'study_start_proof_url' ? uploading : null
               }
               onPick={(file) =>
-                pickPhoto(file, 'study_start_proof_url', (d, study_start_proof_url) => ({
-                  ...d,
-                  study_start_proof_url,
-                }))
+                pickPhoto(
+                  file,
+                  'study_start_proof_url',
+                  (d, study_start_proof_url) => ({
+                    ...d,
+                    study_start_proof_url,
+                  }),
+                )
               }
               onClear={() =>
                 update((d) => ({
@@ -674,22 +708,33 @@ export function JournalFields({
               label="Mana bukti kamu selesai belajar?"
               photo={data.study_end_proof_url}
               disabled={!editable || busy || !data.study_start_proof_url}
-              lockedHint={data.study_start_proof_url ? undefined : 'Upload bukti mulai dulu'}
+              lockedHint={
+                data.study_start_proof_url
+                  ? undefined
+                  : 'Upload bukti mulai dulu'
+              }
               uploading={
                 uploading?.field === 'study_end_proof_url' ? uploading : null
               }
               onPick={(file) =>
-                pickPhoto(file, 'study_end_proof_url', (d, study_end_proof_url) => ({
-                  ...d,
-                  study_end_proof_url,
-                }))
+                pickPhoto(
+                  file,
+                  'study_end_proof_url',
+                  (d, study_end_proof_url) => ({
+                    ...d,
+                    study_end_proof_url,
+                  }),
+                )
               }
-              onClear={() => update((d) => ({ ...d, study_end_proof_url: null }))}
+              onClear={() =>
+                update((d) => ({ ...d, study_end_proof_url: null }))
+              }
             />
 
             {!(data.study_start_proof_url && data.study_end_proof_url) && (
               <p className="text-xs text-muted-foreground sm:col-span-2">
-                Status belajar baru tercatat setelah kedua bukti terupload.
+                Upload kedua bukti (mulai dan selesai) untuk mendapatkan
+                masing-masing 7 poin (total 14 poin).
               </p>
             )}
           </div>
@@ -697,12 +742,17 @@ export function JournalFields({
 
         <Reveal show={data.did_study === false} reduce={reduce}>
           <div className="pt-4">
-            <Field label="Kenapa kamu tidak belajar?" done={!!data.study_skip_reason?.trim()}>
+            <Field
+              label="Kenapa kamu tidak belajar?"
+              done={!!data.study_skip_reason?.trim()}
+            >
               <Input
                 placeholder="Contoh: saya tertidur"
                 disabled={!editable}
                 value={data.study_skip_reason ?? ''}
-                onChange={(e) => update((d) => ({ ...d, study_skip_reason: e.target.value }))}
+                onChange={(e) =>
+                  update((d) => ({ ...d, study_skip_reason: e.target.value }))
+                }
                 className="h-9"
               />
             </Field>

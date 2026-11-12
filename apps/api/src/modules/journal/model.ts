@@ -25,9 +25,12 @@ const Journal = t.Object({
 export const JournalModel = {
   Journal,
 
-  upsertBody: t.Partial(Journal),
+  upsertBody: t.Object({
+    ...t.Partial(Journal).properties,
+    date: t.Optional(t.String({ format: 'date' })),
+  }),
   upsertResponse: r.Success('Journal upsert successful'),
-
+  journalLocked: r.Failed('Journal for this date is locked'),
   getJournalParam: t.Object({
     date: t.String({ format: 'date' }),
   }),
@@ -47,12 +50,20 @@ export const JournalModel = {
       month: t.String({ pattern: '^\\d{4}-(0[1-9]|1[0-2])$' }),
       rate: t.Number(),
       average_score: t.Number(),
+      total_score: t.Number(),
       average_score_each: t.Object({
         checkins: t.Number(),
         prays: t.Number(),
         sports: t.Number(),
         studies: t.Number(),
       }),
+      total_score_each: t.Object({
+        checkins: t.Number(),
+        prays: t.Number(),
+        sports: t.Number(),
+        studies: t.Number(),
+      }),
+      elapsed_days: t.Number(),
       scores: t.Array(
         t.Object({
           date: t.String({ format: 'date' }),
@@ -70,12 +81,21 @@ export const JournalModel = {
     t.Object({
       month: t.String({ pattern: '^\\d{4}-(0[1-9]|1[0-2])$' }),
       average_score: t.Number(),
+      total_score: t.Number(),
       average_score_each: t.Object({
         checkins: t.Number(),
         prays: t.Number(),
         sports: t.Number(),
         studies: t.Number(),
       }),
+      total_score_each: t.Object({
+        checkins: t.Number(),
+        prays: t.Number(),
+        sports: t.Number(),
+        studies: t.Number(),
+      }),
+      student_count: t.Number(),
+      elapsed_days: t.Number(),
       scores: t.Array(
         t.Object({
           date: t.String({ format: 'date' }),
@@ -83,10 +103,11 @@ export const JournalModel = {
         }),
       ),
       score_distribution: t.Object({
-        '0-39': t.Number(),
-        '40-59': t.Number(),
-        '60-79': t.Number(),
-        '80-100': t.Number(),
+        '0-20': t.Number(),
+        '21-40': t.Number(),
+        '41-60': t.Number(),
+        '61-80': t.Number(),
+        '81-100': t.Number(),
       }),
       completed_days: t.Number(),
       students_on_streaks: t.Number(),
@@ -102,11 +123,19 @@ export const JournalModel = {
     "Get monthly student's journal stats successful",
     t.Object({
       month: t.String({ pattern: '^\\d{4}-(0[1-9]|1[0-2])$' }),
+      elapsed_days: t.Number(),
       students: t.Array(
         t.Object({
           user_id: t.String(),
           average_score: t.Number(),
+          total_score: t.Number(),
           average_score_each: t.Object({
+            checkins: t.Number(),
+            prays: t.Number(),
+            sports: t.Number(),
+            studies: t.Number(),
+          }),
+          total_score_each: t.Object({
             checkins: t.Number(),
             prays: t.Number(),
             sports: t.Number(),

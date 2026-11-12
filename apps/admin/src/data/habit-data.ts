@@ -1,6 +1,22 @@
 import type { CheckinsModel } from '@be/modules/checkins/model';
 import type { JournalModel } from '@be/modules/journal/model';
 import type { LeaderboardModel } from '@be/modules/leaderboard/model';
+import {
+  computeCheckinScore,
+  computeDayScore,
+  computePrayScore,
+  computeSportScore,
+  computeStudyScore,
+  MODULE_UI_MAX,
+} from '@xirpl/shared';
+export {
+  computeCheckinScore,
+  computeDayScore,
+  computePrayScore,
+  computeSportScore,
+  computeStudyScore,
+  MODULE_UI_MAX,
+};
 
 export type Journal = JournalModel['Journal'];
 export type JournalBody = JournalModel['upsertBody'];
@@ -201,6 +217,7 @@ export const MODULES = [
     key: 'ibadah',
     label: 'Ibadah',
     api: 'prays',
+    max: 20,
     dot: 'bg-violet-500',
     text: 'text-violet-500',
   },
@@ -208,6 +225,7 @@ export const MODULES = [
     key: 'hadir',
     label: 'Kehadiran',
     api: 'checkins',
+    max: 30,
     dot: 'bg-sky-500',
     text: 'text-sky-500',
   },
@@ -215,6 +233,7 @@ export const MODULES = [
     key: 'olahraga',
     label: 'Olahraga',
     api: 'sports',
+    max: 25,
     dot: 'bg-emerald-500',
     text: 'text-emerald-500',
   },
@@ -222,6 +241,7 @@ export const MODULES = [
     key: 'belajar',
     label: 'Belajar',
     api: 'studies',
+    max: 25,
     dot: 'bg-amber-500',
     text: 'text-amber-500',
   },
@@ -229,6 +249,7 @@ export const MODULES = [
   key: string;
   label: string;
   api: keyof ModuleAverages;
+  max: number;
   dot: string;
   text: string;
 }[];
@@ -330,20 +351,23 @@ export const dayOf = (date: string) => Number(date.slice(8, 10));
  * alone doesn't raise the score.
  */
 export const moduleStatus = (j: Journal | null, c: Check | null) => ({
-  ibadah: !!j && IBADAH.every(({ field }) => j[field] === true),
-  hadir: !!c?.checked_in_at,
-  olahraga: j?.did_sport === true && !!j.sport_proof_url,
-  belajar:
-    j?.did_study === true &&
-    !!j.study_start_proof_url &&
-    !!j.study_end_proof_url,
+  ibadah: computePrayScore(j) === 20,
+  hadir: computeCheckinScore(c) > 0,
+  olahraga: computeSportScore(j) === 25,
+  belajar: computeStudyScore(j) === 25,
 });
 
 export const level = (j: Journal | null, c: Check | null) =>
   Object.values(moduleStatus(j, c)).filter(Boolean).length;
 
 /** Server score 0..100 into a 0..4 module level, the unit the heatmap uses. */
-export const scoreLevel = (score: number) => Math.round(score / 25);
+export const scoreLevel = (score: number) => {
+  if (score <= 0) return 0;
+  if (score < 40) return 1;
+  if (score < 60) return 2;
+  if (score < 80) return 3;
+  return 4;
+};
 
 // Map `scores` from the recap into a date -> level map for the calendar grid.
 export function levelsByDay(scores: DayScore[]) {
@@ -360,6 +384,9 @@ export const averageScore = (scores: DayScore[]) =>
   scores.length
     ? Math.round(scores.reduce((a, s) => a + s.score, 0) / scores.length)
     : 0;
+
+export const totalScore = (scores: DayScore[]) =>
+  scores.reduce((a, s) => a + s.score, 0);
 
 // Map each module average from its server name to the key the UI uses.
 export const moduleStats = (
@@ -381,8 +408,9 @@ export const EMPTY_MODULE_AVERAGES: ModuleAverages = {
 const blank = (s: string) => (s.trim() ? s.trim() : null);
 
 /** Trim text input before sending; empty strings are stored as `null`. */
-export const toJournalBody = (j: Journal): JournalBody => ({
+export const toJournalBody = (j: Journal, date?: string): JournalBody => ({
   ...j,
+  ...(date ? { date } : {}),
   sport_type: j.sport_type && blank(j.sport_type),
   sport_skip_reason: j.sport_skip_reason && blank(j.sport_skip_reason),
   study_about: j.study_about && blank(j.study_about),

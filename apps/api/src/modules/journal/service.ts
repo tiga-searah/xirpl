@@ -1,5 +1,10 @@
 import { toDateStr, wibHour } from '@be/lib/utils';
 import { checkinsTable, db, habitJournalsTable } from '@xirpl/db';
+import {
+  computeDayScore,
+  getEditableJournalDates,
+  MODULE_MAX,
+} from '@xirpl/shared';
 import { and, between, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { User } from '../user/service';
 import type { JournalModel } from './model';
@@ -73,45 +78,50 @@ const monthlySummary = (
   const days: { date: string; score: number }[] = [];
   const counts = { checkins: 0, prays: 0, sports: 0, studies: 0 };
   const moduleDays = {
-    checkins: [] as number[],
-    prays: [] as number[],
-    sports: [] as number[],
-    studies: [] as number[],
+    checkins: [] as { day: number; ratio: number }[],
+    prays: [] as { day: number; ratio: number }[],
+    sports: [] as { day: number; ratio: number }[],
+    studies: [] as { day: number; ratio: number }[],
   };
   let perfect = 0;
   let late = 0;
+  let checkinCount = 0;
   let sum = 0;
   for (let d = 1; d <= cap; d++) {
     const date = `${month}-${String(d).padStart(2, '0')}`;
-    const m = moduleDone(
-      journals.get(date),
-      !!checkins.get(date)?.checked_in_at,
-    );
-    const score =
-      (Number(m.checkins) +
-        Number(m.prays) +
-        Number(m.sports) +
-        Number(m.studies)) *
-      25;
-    for (const k of ['checkins', 'prays', 'sports', 'studies'] as const) {
-      if (!m[k]) continue;
-      counts[k]++;
-      moduleDays[k].push(d);
+    const j = journals.get(date);
+    const c = checkins.get(date);
+    const s = computeDayScore(j, c);
+    const score = s.total;
+
+    for (const k of MODULE_KEYS) {
+      counts[k] += s[k];
+      if (s[k] > 0) {
+        moduleDays[k].push({
+          day: d,
+          ratio: Math.round((s[k] / MODULE_MAX[k]) * 100) / 100,
+        });
+      }
     }
     sum += score;
     if (score === 100) perfect++;
-    const c = checkins.get(date);
-    if (c && isLate(c.checked_in_at, c.type)) late++;
+    if (c?.checked_in_at) {
+      checkinCount++;
+      if (isLate(c.checked_in_at, c.type)) late++;
+    }
     days.push({ date, score });
   }
   const n = cap || 1;
   return {
     days,
     score: cap ? Math.round(sum / n) : 0,
+    total_score: sum,
     counts,
     moduleDays,
     perfect,
     late,
+    checkinCount,
+    avg: (v: number) => Math.round(v / n),
     pct: (v: number) => Math.round((v / n) * 100),
   };
 };
@@ -122,25 +132,6 @@ const streakFrom = (done: boolean[]) => {
   for (let i = done[0] ? 0 : 1; i < done.length && done[i]; i++) run++;
   return run;
 };
-
-/**
- * Module completion for one day. Mirrors web `moduleStatus`: a module only
- * counts when its proof is present.
- */
-const moduleDone = (row: JournalRow | undefined, hasCheckin: boolean) => ({
-  checkins: hasCheckin,
-  prays: !!(
-    row?.prayed_dhuha &&
-    row.prayed_tahajud &&
-    row.prayed_qabliyah_fajr &&
-    row.prayed_badiyah_isya
-  ),
-  sports: row?.did_sport === true && !!row.sport_proof_url,
-  studies:
-    row?.did_study === true &&
-    !!row.study_start_proof_url &&
-    !!row.study_end_proof_url,
-});
 
 /** Postgres interval `HH:MM:SS` (or `HH:MM:SS.fff`) -> minutes. */
 const intervalToMinutes = (v: string | null) => {
@@ -176,10 +167,16 @@ export const Journal = {
    * partial body never wipes existing data.
    */
   async upsert(userId: string, body: JournalModel['upsertBody']) {
-    const { sport_duration, ...rest } = body;
+    const { sport_duration, date: requestedDate, ...rest } = body;
+    const targetDate = requestedDate ?? toDateStr();
+    const editableDates = getEditableJournalDates(new Date());
+    if (!editableDates.includes(targetDate)) {
+      return { ok: false as const, reason: 'locked' as const };
+    }
+
     const values = {
       user_id: userId,
-      date: toDateStr(),
+      date: targetDate,
       ...rest,
       ...(sport_duration !== undefined && {
         sport_duration:
@@ -196,6 +193,7 @@ export const Journal = {
         target: [habitJournalsTable.user_id, habitJournalsTable.date],
         set,
       });
+    return { ok: true as const };
   },
 
   /** Get journal for a date, or null. */
@@ -233,6 +231,7 @@ export const Journal = {
         .select({
           date: checkinsTable.date,
           checked_in_at: checkinsTable.checked_in_at,
+          type: checkinsTable.type,
         })
         .from(checkinsTable)
         .where(
@@ -244,43 +243,43 @@ export const Journal = {
     ]);
 
     const journalByDate = new Map(rows.map((r) => [r.date, r]));
-    const checkedDates = new Set(
-      checks.filter((c) => c.checked_in_at).map((c) => c.date),
-    );
+    const checkinByDate = new Map(checks.map((c) => [c.date, c]));
 
     const scores: { date: string; score: number }[] = [];
-    const moduleCounts = { checkins: 0, prays: 0, sports: 0, studies: 0 };
+    const moduleTotals = { checkins: 0, prays: 0, sports: 0, studies: 0 };
     for (let d = 1; d <= elapsedDays(month); d++) {
       const date = `${month}-${String(d).padStart(2, '0')}`;
-      const m = moduleDone(journalByDate.get(date), checkedDates.has(date));
+      const j = journalByDate.get(date);
+      const c = checkinByDate.get(date);
+      const s = computeDayScore(j, c);
       scores.push({
         date,
-        score:
-          (Number(m.checkins) +
-            Number(m.prays) +
-            Number(m.sports) +
-            Number(m.studies)) *
-          25,
+        score: s.total,
       });
-      moduleCounts.checkins += Number(m.checkins);
-      moduleCounts.prays += Number(m.prays);
-      moduleCounts.sports += Number(m.sports);
-      moduleCounts.studies += Number(m.studies);
+      moduleTotals.checkins += s.checkins;
+      moduleTotals.prays += s.prays;
+      moduleTotals.sports += s.sports;
+      moduleTotals.studies += s.studies;
     }
 
     const n = scores.length || 1;
-    const pct = (v: number) => Math.round((v / n) * 100);
+    const totalScore = scores.reduce((a, s) => a + s.score, 0);
 
     return {
       month,
-      rate: pct(scores.filter((s) => s.score === 100).length),
-      average_score: Math.round(scores.reduce((a, s) => a + s.score, 0) / n),
+      rate: Math.round(
+        (scores.filter((s) => s.score === 100).length / n) * 100,
+      ),
+      average_score: Math.round(totalScore / n),
+      total_score: totalScore,
       average_score_each: {
-        checkins: pct(moduleCounts.checkins),
-        prays: pct(moduleCounts.prays),
-        sports: pct(moduleCounts.sports),
-        studies: pct(moduleCounts.studies),
+        checkins: Math.round(moduleTotals.checkins / n),
+        prays: Math.round(moduleTotals.prays / n),
+        sports: Math.round(moduleTotals.sports / n),
+        studies: Math.round(moduleTotals.studies / n),
       },
+      total_score_each: moduleTotals,
+      elapsed_days: elapsedDays(month),
       scores,
     };
   },
@@ -373,16 +372,24 @@ export const Journal = {
     const count = (f: (s: (typeof stats)[number]) => number) =>
       stats.reduce((a, s) => a + f(s), 0);
 
-    const distribution = { '0-39': 0, '40-59': 0, '60-79': 0, '80-100': 0 };
+    const distribution = {
+      '0-20': 0,
+      '21-40': 0,
+      '41-60': 0,
+      '61-80': 0,
+      '81-100': 0,
+    };
     for (const s of stats) {
       const k =
-        s.score < 40
-          ? '0-39'
-          : s.score < 60
-            ? '40-59'
-            : s.score < 80
-              ? '60-79'
-              : '80-100';
+        s.score <= 20
+          ? '0-20'
+          : s.score <= 40
+            ? '21-40'
+            : s.score <= 60
+              ? '41-60'
+              : s.score <= 80
+                ? '61-80'
+                : '81-100';
       distribution[k]++;
     }
 
@@ -395,15 +402,24 @@ export const Journal = {
       return { date, score: Math.round(sum / n) };
     });
 
+    const classTotals = { checkins: 0, prays: 0, sports: 0, studies: 0 };
+    for (const s of stats) {
+      for (const k of MODULE_KEYS) classTotals[k] += s.counts[k];
+    }
+
     return {
       month,
       average_score: mean((s) => s.score),
+      total_score: mean((s) => s.total_score),
       average_score_each: {
-        checkins: mean((s) => s.pct(s.counts.checkins)),
-        prays: mean((s) => s.pct(s.counts.prays)),
-        sports: mean((s) => s.pct(s.counts.sports)),
-        studies: mean((s) => s.pct(s.counts.studies)),
+        checkins: mean((s) => s.avg(s.counts.checkins)),
+        prays: mean((s) => s.avg(s.counts.prays)),
+        sports: mean((s) => s.avg(s.counts.sports)),
+        studies: mean((s) => s.avg(s.counts.studies)),
       },
+      total_score_each: classTotals,
+      student_count: stats.length,
+      elapsed_days: elapsedDays(month),
       scores,
       score_distribution: distribution,
       completed_days: count((s) => s.perfect),
@@ -460,16 +476,18 @@ export const Journal = {
       return {
         user_id: id,
         average_score: m.score,
+        total_score: m.total_score,
         average_score_each: {
-          checkins: m.pct(m.counts.checkins),
-          prays: m.pct(m.counts.prays),
-          sports: m.pct(m.counts.sports),
-          studies: m.pct(m.counts.studies),
+          checkins: m.avg(m.counts.checkins),
+          prays: m.avg(m.counts.prays),
+          sports: m.avg(m.counts.sports),
+          studies: m.avg(m.counts.studies),
         },
+        total_score_each: m.counts,
       };
     });
 
-    return { month, students };
+    return { month, elapsed_days: elapsedDays(month), students };
   },
 
   /**
@@ -588,7 +606,7 @@ export const Journal = {
       },
       overview: {
         rate: mean((r) => r.summary.score),
-        checkins: totals.checkins,
+        checkins: rows.reduce((a, r) => a + r.summary.checkinCount, 0),
         late: rows.reduce((a, r) => a + r.summary.late, 0),
         needAttention: rows.filter((r) => r.summary.score < 50).length,
       },

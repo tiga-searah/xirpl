@@ -124,7 +124,7 @@ export function AdminSidebar() {
 
       <SidebarFooter>
         <p className="text-muted-foreground pb-1 text-center text-[11px] font-semibold tracking-wide">
-          V1.1.0
+          V1.1.1
         </p>
       </SidebarFooter>
     </Sidebar>

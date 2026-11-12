@@ -115,7 +115,7 @@ export function TrendArea({
           className="text-muted-foreground"
         />
         <Tooltip
-          content={<ChartTip labelPrefix="Tgl " />}
+          content={<ChartTip labelPrefix="Tgl " suffix="%" />}
           cursor={{ stroke: color, strokeDasharray: '4 4' }}
         />
         <Area
@@ -133,13 +133,36 @@ export function TrendArea({
 
 export function ModuleRadar({
   stats,
+  totals,
+  days = 1,
+  multiplier = 1,
   height = 220,
 }: {
   stats: Record<ModuleKey, number>;
+  totals?: Record<ModuleKey, number>;
+  days?: number;
+  multiplier?: number;
   height?: number;
 }) {
   const { MODULES } = useHabitAdmin();
-  const data = MODULES.map((m) => ({ label: m.label, value: stats[m.key] }));
+  const effectiveDays = Math.max(1, days);
+  const effectiveMultiplier = Math.max(1, multiplier);
+
+  const data = MODULES.map((m) => {
+    const maxPerDay = m.max || 25;
+    const target = effectiveDays * effectiveMultiplier * maxPerDay;
+    const collected =
+      totals?.[m.key] !== undefined
+        ? totals[m.key]
+        : Math.round((stats[m.key] ?? 0) * effectiveDays * effectiveMultiplier);
+    const pct = target > 0 ? Math.round((collected / target) * 100) : 0;
+    return {
+      label: m.label,
+      value: Math.min(100, Math.max(0, pct)),
+      collected,
+      target,
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -150,7 +173,37 @@ export function ModuleRadar({
           tick={AXIS}
           className="text-muted-foreground"
         />
-        <Tooltip content={<ChartTip />} />
+        <Tooltip
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0];
+            const item = p?.payload as
+              | {
+                  label: string;
+                  value: number;
+                  collected: number;
+                  target: number;
+                }
+              | undefined;
+            return (
+              <div className="border-border bg-card duo-card rounded-xl px-3 py-2 text-xs">
+                <p className="mb-1 font-semibold text-foreground dark:text-foreground">
+                  {item?.label}
+                </p>
+                <p className="flex items-center gap-1.5 text-muted-foreground dark:text-foreground">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ background: p?.color ?? '#0ea5e9' }}
+                  />
+                  Ketuntasan:{' '}
+                  <span className="font-semibold tabular-nums text-foreground dark:text-foreground">
+                    {item?.collected}/{item?.target} poin ({item?.value}%)
+                  </span>
+                </p>
+              </div>
+            );
+          }}
+        />
         <Radar
           name="Ketuntasan"
           dataKey="value"
@@ -165,21 +218,42 @@ export function ModuleRadar({
 
 export function ModuleBars({
   stats,
+  totals,
+  days = 1,
+  studentCount = 1,
   height = 220,
 }: {
   stats: Record<ModuleKey, number>;
+  totals?: Record<ModuleKey, number>;
+  days?: number;
+  studentCount?: number;
   height?: number;
 }) {
   const { MODULES, MODULE_HEX } = useHabitAdmin();
-  const data = MODULES.map((m) => ({
-    label: m.label,
-    value: stats[m.key],
-    fill: MODULE_HEX[m.key],
-  }));
+  const effectiveDays = Math.max(1, days);
+  const effectiveStudents = Math.max(1, studentCount);
+
+  const data = MODULES.map((m) => {
+    const maxPerDay = m.max || 25;
+    const target = effectiveDays * effectiveStudents * maxPerDay;
+    const collected =
+      totals?.[m.key] !== undefined
+        ? totals[m.key]
+        : Math.round((stats[m.key] ?? 0) * effectiveDays * effectiveStudents);
+    const pct = target > 0 ? Math.round((collected / target) * 100) : 0;
+    return {
+      label: m.label,
+      value: collected,
+      collected,
+      target,
+      pct,
+      fill: MODULE_HEX[m.key],
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -10 }}>
         <CartesianGrid
           strokeDasharray="3 3"
           className="stroke-border dark:stroke-border"
@@ -187,14 +261,46 @@ export function ModuleBars({
         />
         <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
         <YAxis
-          domain={[0, 100]}
           tick={AXIS}
           tickLine={false}
           axisLine={false}
-          width={44}
+          width={50}
+          className="text-muted-foreground"
         />
-        <Tooltip content={<ChartTip />} cursor={{ fill: 'transparent' }} />
-        <Bar dataKey="value" name="Ketuntasan" radius={[6, 6, 0, 0]}>
+        <Tooltip
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const p = payload[0];
+            const item = p?.payload as
+              | {
+                  label: string;
+                  collected: number;
+                  target: number;
+                  pct: number;
+                  fill: string;
+                }
+              | undefined;
+            return (
+              <div className="border-border bg-card duo-card rounded-xl px-3 py-2 text-xs">
+                <p className="mb-1 font-semibold text-foreground dark:text-foreground">
+                  {item?.label}
+                </p>
+                <p className="flex items-center gap-1.5 text-muted-foreground dark:text-foreground">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ background: item?.fill }}
+                  />
+                  Total poin:{' '}
+                  <span className="font-semibold tabular-nums text-foreground dark:text-foreground">
+                    {item?.collected}/{item?.target} poin ({item?.pct}%)
+                  </span>
+                </p>
+              </div>
+            );
+          }}
+          cursor={{ fill: 'transparent' }}
+        />
+        <Bar dataKey="value" name="Total Poin" radius={[6, 6, 0, 0]}>
           {data.map((d) => (
             <Cell key={d.label} fill={d.fill} />
           ))}
@@ -204,7 +310,7 @@ export function ModuleBars({
   );
 }
 
-const BUCKET_HEX = ['#f43f5e', '#f59e0b', '#0ea5e9', '#10b981'];
+const BUCKET_HEX = ['#f43f5e', '#f59e0b', '#facc15', '#a3e635', '#10b981'];
 
 export function DistributionBars({
   data,
@@ -230,7 +336,7 @@ export function DistributionBars({
           width={40}
         />
         <Tooltip
-          content={<ChartTip suffix=" anggota" />}
+          content={<ChartTip suffix=" anggota" labelPrefix="Rentang " />}
           cursor={{ fill: 'transparent' }}
         />
         <Bar dataKey="count" name="Anggota" radius={[6, 6, 0, 0]}>

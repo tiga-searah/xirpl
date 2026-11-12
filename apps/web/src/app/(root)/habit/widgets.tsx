@@ -1,17 +1,17 @@
 'use client';
 
+import { cn } from '@fe/lib/utils';
+// ponytail: same chart the admin dashboard already ships, so the student view
+// and the teacher view can never drift apart.
+import { TrendArea } from '@xirpl/shared/components/habit-admin/charts';
+import { InfoHint } from '@xirpl/shared/components/info-hint';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@xirpl/shared/components/ui/card';
-import { cn } from '@fe/lib/utils';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  FlameIcon,
-} from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, FlameIcon } from 'lucide-react';
 import { AnimatePresence, motion as m, useReducedMotion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import {
@@ -28,13 +28,9 @@ import {
   type StreakData,
   sameDay,
   toLocalDate,
+  totalScore,
   WEEKDAYS,
 } from '../../../../data/habit-data';
-// ponytail: same chart the admin dashboard already ships, so the student view
-// and the teacher view can never drift apart.
-import { TrendArea } from '@xirpl/shared/components/habit-admin/charts';
-
-import { InfoHint } from '@xirpl/shared/components/info-hint';
 
 export { InfoHint };
 
@@ -82,7 +78,7 @@ export function HabitCalendar({
           </m.div>
           <InfoHint
             label="Kalender"
-            text="Tiap kotak adalah satu hari, makin hijau berarti makin banyak dari 4 modul yang selesai. Klik satu tanggal untuk melihat catatannya. Tanggal selain hari ini hanya bisa dibaca."
+            text="Tiap kotak adalah satu hari, makin hijau berarti makin tinggi perolehan poin dari total 100 poin. Klik satu tanggal untuk melihat catatannya. Tanggal selain hari ini hanya bisa dibaca."
           />
         </div>
         <div className="flex gap-1">
@@ -199,6 +195,7 @@ export function HabitStats({
   const copy = useMemo(() => attendanceCopy(new Date()), []);
 
   const average = recap?.average_score ?? averageScore(scores);
+  const total = recap?.total_score ?? totalScore(scores);
   const count = streak?.streak ?? 0;
   // The server sends the last check-in date, so today is safe when it matches.
   const since = streak?.since ? toLocalDate(streak.since) : null;
@@ -230,20 +227,37 @@ export function HabitStats({
       </CardHeader>
 
       <CardContent>
-        <div className="mb-2 flex items-baseline gap-2">
-          <span className="text-3xl font-bold tabular-nums text-foreground dark:text-foreground">
-            {average}%
-          </span>
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            rata-rata harian
-            <InfoHint
-              label="Rata-rata harian"
-              text="Rata-rata modul yang selesai per hari di bulan ini. Empat modul selesai berarti 100% untuk hari itu."
-            />
-          </span>
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-border/70 bg-card p-3 dark:border-border">
+            <span className="text-2xl font-bold tabular-nums text-foreground dark:text-foreground">
+              {total}{' '}
+              <span className="text-sm font-semibold text-muted-foreground">
+                poin
+              </span>
+            </span>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              Total poin bulan ini
+              <InfoHint
+                label="Total poin bulan ini"
+                text="Total akumulasi seluruh poin yang kamu kumpulkan di bulan ini. Maksimal 100 poin per hari."
+              />
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card p-3 dark:border-border">
+            <span className="text-2xl font-bold tabular-nums text-foreground dark:text-foreground">
+              {average}%
+            </span>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              Rata-rata harian
+              <InfoHint
+                label="Rata-rata harian"
+                text="Rata-rata ketuntasan per hari di bulan ini. Hari sempurna bernilai 100% (100 poin)."
+              />
+            </p>
+          </div>
         </div>
 
-        <TrendArea series={series} height={150} name="Rata-rata harian" />
+        <TrendArea series={series} height={150} name="Poin harian" />
 
         <div className="mt-7 border-t border-border/70 pt-5 dark:border-border">
           <div
@@ -266,23 +280,23 @@ export function HabitStats({
                 <FlameIcon className="size-5" />
               </div>
               <div className="min-w-0">
-              <p className="flex items-center gap-2 text-2xl leading-none font-bold tabular-nums text-foreground dark:text-foreground">
-                {count}{' '}
-                <span className="text-sm font-medium text-muted-foreground">
-                  hari beruntun
-                </span>
-                <InfoHint
-                  label="Hari beruntun"
-                  text={`Jumlah hari berturut-turut kamu ${copy.verb.toLowerCase()}. Dihitung dari seluruh riwayat di server, bukan per bulan, jadi tidak ikut berubah saat kamu ganti bulan. Satu hari terlewat memutus hitungan.`}
-                />
-              </p>
-              <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                {todayDone
-                  ? 'Aman untuk hari ini'
-                  : atRisk
-                    ? `${copy.verb} sebelum ${copy.deadline} agar streak tidak putus`
-                    : `${copy.verb} sebelum ${copy.deadline} untuk memulai streak`}
-              </p>
+                <p className="flex items-center gap-2 text-2xl leading-none font-bold tabular-nums text-foreground dark:text-foreground">
+                  {count}{' '}
+                  <span className="text-sm font-medium text-muted-foreground">
+                    hari beruntun
+                  </span>
+                  <InfoHint
+                    label="Hari beruntun"
+                    text={`Jumlah hari berturut-turut kamu ${copy.verb.toLowerCase()}. Dihitung dari seluruh riwayat di server, bukan per bulan, jadi tidak ikut berubah saat kamu ganti bulan. Satu hari terlewat memutus hitungan.`}
+                  />
+                </p>
+                <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                  {todayDone
+                    ? 'Aman untuk hari ini'
+                    : atRisk
+                      ? `${copy.verb} sebelum ${copy.deadline} agar streak tidak putus`
+                      : `${copy.verb} sebelum ${copy.deadline} untuk memulai streak`}
+                </p>
               </div>
             </div>
           </div>
@@ -322,21 +336,37 @@ export function HabitStats({
             </span>
             <InfoHint
               label="Per modul"
-              text="Porsi hari di bulan ini tiap modul tercatat selesai. Kehadiran memakai batas 07:00 pada hari sekolah, dan pada Sabtu, Minggu, serta hari libur nasional memakai Bangun Pagi dengan batas 06:00."
+              text="Total perolehan poin tiap modul di bulan ini dibanding target maksimal. Kehadiran (30 poin/hari), Ibadah (20 poin/hari), Olahraga (25 poin/hari), dan Belajar (25 poin/hari)."
             />
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-            {MODULES.map((mod) => (
-              <div key={mod.key} className="flex items-center gap-2">
-                <span className={cn('size-2 shrink-0 rounded-full', mod.dot)} />
-                <span className="text-sm text-muted-foreground dark:text-muted-foreground">
-                  {mod.label}
-                </span>
-                <span className="ml-auto text-sm font-semibold tabular-nums text-foreground dark:text-foreground">
-                  {stats[mod.key]}%
-                </span>
-              </div>
-            ))}
+            {MODULES.map((mod) => {
+              const days = Math.max(1, recap?.elapsed_days ?? scores.length);
+              const max = mod.max || 25;
+              const target = days * max;
+              const collected =
+                recap?.total_score_each?.[mod.api] !== undefined
+                  ? recap.total_score_each[mod.api]
+                  : Math.round((stats[mod.key] ?? 0) * days);
+              const pct =
+                target > 0 ? Math.round((collected / target) * 100) : 0;
+              return (
+                <div key={mod.key} className="flex items-center gap-2">
+                  <span
+                    className={cn('size-2 shrink-0 rounded-full', mod.dot)}
+                  />
+                  <span className="text-sm text-muted-foreground dark:text-muted-foreground">
+                    {mod.label}
+                  </span>
+                  <span className="ml-auto text-sm font-semibold tabular-nums text-foreground dark:text-foreground">
+                    {collected}/{target} poin{' '}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({pct}%)
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </CardContent>

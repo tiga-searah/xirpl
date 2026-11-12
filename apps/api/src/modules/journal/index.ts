@@ -1,5 +1,5 @@
-import Elysia from 'elysia';
 import { toDateStr } from '@be/lib/utils';
+import Elysia from 'elysia';
 import { requireAuth } from '../auth/middleware';
 import { JournalModel } from './model';
 import { Journal } from './service';
@@ -10,7 +10,13 @@ export const journal = new Elysia({ prefix: '/journals', tags: ['Journals'] })
   .put(
     '/',
     async ({ auth, body, status }) => {
-      await Journal.upsert(auth.user.id, body);
+      const res = await Journal.upsert(auth.user.id, body);
+      if (!res.ok) {
+        return status(403, {
+          success: false,
+          message: 'Journal for this date is locked',
+        });
+      }
       return status(200, {
         success: true,
         message: 'Journal upsert successful',
@@ -18,13 +24,14 @@ export const journal = new Elysia({ prefix: '/journals', tags: ['Journals'] })
     },
     {
       detail: {
-        summary: 'Upsert Today Journal',
+        summary: 'Upsert Journal',
         description:
-          'Create or update the journal for today. Partial bodies are allowed; only provided fields are written.',
+          'Create or update the journal for today or within the 03:00 AM grace window. Partial bodies are allowed; only provided fields are written.',
       },
       body: JournalModel.upsertBody,
       response: {
         200: JournalModel.upsertResponse,
+        403: JournalModel.journalLocked,
       },
     },
   )

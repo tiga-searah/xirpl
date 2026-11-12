@@ -1,4 +1,4 @@
-import { studentTimeline } from '../charts/student-timeline';
+import { studentTimeline, type TimelineDay } from '../charts/student-timeline';
 import { drawSvg } from '../svg';
 import { text } from '../text';
 import { AVATAR_COLORS, COLORS, FONTS, P2, pt, SIZES } from '../theme';
@@ -7,7 +7,7 @@ export type StudentRecap = {
   id: string;
   nis: number | null;
   name: string;
-  modules: { key: string; days: number[] }[];
+  modules: { key: string; days: TimelineDay[] }[];
   rate: number;
   streaks: number;
 };

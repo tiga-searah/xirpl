@@ -2,7 +2,9 @@
 
 import { useUser } from '@fe/hooks/use-user';
 import api, { API_URL } from '@fe/lib/api';
-import { LockIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { getEditableJournalDates } from '@xirpl/shared';
+import { HabitScoreNotice } from '@xirpl/shared/components/habit-score-notice';
+import { ClockIcon, LockIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { AnimatePresence, motion as m, useReducedMotion } from 'motion/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -158,9 +160,17 @@ export default function HabitJournal() {
 
   const today = useMemo(() => new Date(), []);
   const todayStr = fmtDate(today);
-  const date = fmtDate(parseDate(params.get('date')) ?? today);
+  const defaultDate = useMemo(() => {
+    const allowed = getEditableJournalDates(new Date());
+    return allowed.length > 1 ? allowed[1]! : allowed[0]!;
+  }, []);
+  const date = fmtDate(
+    parseDate(params.get('date')) ?? parseDate(defaultDate) ?? today,
+  );
   const selected = parseDate(date) ?? today;
-  const editable = date === todayStr;
+  const allowedDates = useMemo(() => getEditableJournalDates(now), [now]);
+  const editable = allowedDates.includes(date);
+  const isGraceYesterday = editable && date !== todayStr;
 
   // The journal is a private page. Save the original destination so users return
   // to the date they had open after logging in.
@@ -260,34 +270,37 @@ export default function HabitJournal() {
     return () => clearInterval(timer);
   }, [waitingForOpen]);
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(
     () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      clearTimeout(saveTimer.current);
     },
     [],
   );
 
   // Update state, then send the whole day's journal — debounced so typing
   // doesn't fire a request per keystroke.
-  const update = useCallback((fn: (prev: Journal) => Journal) => {
-    const prev = dataRef.current;
-    const next = fn(prev);
-    dataRef.current = next;
-    setData(next);
-    dropProofs(prev, next);
+  const update = useCallback(
+    (fn: (prev: Journal) => Journal) => {
+      const prev = dataRef.current;
+      const next = fn(prev);
+      dataRef.current = next;
+      setData(next);
+      dropProofs(prev, next);
 
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      api.journals
-        .put(toJournalBody(next))
-        .then(({ error: failed }) => {
-          setError(failed ? 'Gagal menyimpan ke server. Coba lagi.' : null);
-          if (!failed) setVersion((v) => v + 1);
-        })
-        .catch(() => setError('Gagal menyimpan ke server. Coba lagi.'));
-    }, SAVE_DELAY);
-  }, []);
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        api.journals
+          .put(toJournalBody(next, date))
+          .then(({ error: failed }) => {
+            setError(failed ? 'Gagal menyimpan ke server. Coba lagi.' : null);
+            if (!failed) setVersion((v) => v + 1);
+          })
+          .catch(() => setError('Gagal menyimpan ke server. Coba lagi.'));
+      }, SAVE_DELAY);
+    },
+    [date],
+  );
 
   const pickPhoto = async (
     file: File | undefined,
@@ -367,6 +380,8 @@ export default function HabitJournal() {
             {!editable && ' · hanya bisa dibaca'}
           </p>
 
+          <HabitScoreNotice />
+
           <AnimatePresence>
             {isAdminRole(user?.role) && showAdminNotice && (
               <m.div
@@ -433,6 +448,21 @@ export default function HabitJournal() {
               <p className="mb-6 flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                 <LockIcon className="size-4 shrink-0" />
                 Catatan tanggal ini terkunci.
+                <button
+                  type="button"
+                  onClick={() => setDate(today)}
+                  className="ml-auto cursor-pointer font-semibold underline underline-offset-2"
+                >
+                  Ke hari ini
+                </button>
+              </p>
+            )}
+
+            {isGraceYesterday && (
+              <p className="mb-6 flex items-center gap-2 rounded-xl border border-sky-300/80 bg-pastel-blue/40 px-4 py-3 text-sm font-medium text-sky-800 dark:border-sky-500/30 dark:bg-sky-950/40 dark:text-sky-200">
+                <ClockIcon className="size-4 shrink-0 text-sky-600 dark:text-sky-400" />
+                Masa tenggang aktif: kamu masih bisa mengisi catatan kemarin
+                hingga pukul 03:00 WIB.
                 <button
                   type="button"
                   onClick={() => setDate(today)}

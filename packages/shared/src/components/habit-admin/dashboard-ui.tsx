@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { ClockIcon, ShieldAlertIcon, XIcon, type UsersIcon } from 'lucide-react';
-import { Card, CardContent } from '../ui/card';
-import { Skeleton } from '../ui/skeleton';
+import {
+  type ClockIcon,
+  ShieldAlertIcon,
+  type UsersIcon,
+  XIcon,
+} from 'lucide-react';
+import { type ReactNode, useState } from 'react';
 import { cn } from '../../utils';
 import { InfoHint } from '../info-hint';
+import { Card, CardContent } from '../ui/card';
+import { Skeleton } from '../ui/skeleton';
 import { useHabitAdmin } from './context';
 
 export function ProofModal({
@@ -34,7 +39,9 @@ export function ProofModal({
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-border">
-          <h3 className="font-semibold text-foreground dark:text-foreground">Bukti {proof.label}</h3>
+          <h3 className="font-semibold text-foreground dark:text-foreground">
+            Bukti {proof.label}
+          </h3>
           <button
             type="button"
             aria-label="Tutup bukti"
@@ -47,7 +54,9 @@ export function ProofModal({
         <div className="flex max-h-[calc(90vh-4rem)] flex-col items-center gap-2 overflow-auto bg-secondary p-3 dark:bg-card">
           {imgError ? (
             <div className="flex flex-col items-center gap-3">
-              <p className="text-sm text-muted-foreground">Gambar gagal dimuat</p>
+              <p className="text-sm text-muted-foreground">
+                Gambar gagal dimuat
+              </p>
               <a
                 href={imageUrl}
                 target="_blank"
@@ -75,7 +84,9 @@ export function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-medium text-foreground dark:text-foreground">{value}</dd>
+      <dd className="truncate font-medium text-foreground dark:text-foreground">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -85,7 +96,9 @@ export function Pill({ ok, children }: { ok: boolean; children: ReactNode }) {
     <span
       className={cn(
         'rounded-full px-2 py-0.5 text-xs font-semibold',
-        ok ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-secondary text-muted-foreground dark:bg-secondary',
+        ok
+          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+          : 'bg-secondary text-muted-foreground dark:bg-secondary',
       )}
     >
       {children}
@@ -143,7 +156,12 @@ export function Stat({
   return (
     <Card>
       <CardContent className="flex items-start gap-3">
-        <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl text-white', TONES[tone])}>
+        <span
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center rounded-xl text-white',
+            TONES[tone],
+          )}
+        >
           <Icon className="size-4.5" />
         </span>
         <div className="min-w-0">
@@ -151,7 +169,9 @@ export function Stat({
             {label}
             <InfoHint label={label} text={info} />
           </p>
-          <p className="text-2xl leading-tight font-bold tabular-nums text-foreground dark:text-foreground">{value}</p>
+          <p className="text-2xl leading-tight font-bold tabular-nums text-foreground dark:text-foreground">
+            {value}
+          </p>
           <p className="truncate text-xs text-muted-foreground">{hint}</p>
         </div>
       </CardContent>
@@ -159,7 +179,15 @@ export function Stat({
   );
 }
 
-export function Guard({ title, body, action }: { title: string; body: string; action: ReactNode }) {
+export function Guard({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action: ReactNode;
+}) {
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
       <Card className="max-w-md text-center">
@@ -167,7 +195,9 @@ export function Guard({ title, body, action }: { title: string; body: string; ac
           <span className="flex size-12 items-center justify-center rounded-2xl bg-rose-500 text-white">
             <ShieldAlertIcon className="size-6" />
           </span>
-          <h1 className="text-xl font-bold text-foreground dark:text-white">{title}</h1>
+          <h1 className="text-xl font-bold text-foreground dark:text-white">
+            {title}
+          </h1>
           <p className="text-sm text-muted-foreground">{body}</p>
           <div className="mt-2">{action}</div>
         </CardContent>

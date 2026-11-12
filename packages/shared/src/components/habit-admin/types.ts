@@ -12,7 +12,10 @@ export type DayScore = JournalModel['recapResponse']['data']['scores'][number];
 export type MemberRow = {
   member: Member;
   score: number;
+  totalScore?: number;
   modules: Record<ModuleKey, number>;
+  moduleTotals?: Record<ModuleKey, number>;
+  elapsedDays?: number;
   late: number;
   absent: number;
   present: number;
@@ -20,7 +23,11 @@ export type MemberRow = {
 
 export type ClassSummary = {
   score: number;
+  totalScore?: number;
   modules: Record<ModuleKey, number>;
+  moduleTotals?: Record<ModuleKey, number>;
+  studentCount?: number;
+  elapsedDays?: number;
   perfect: number;
   streaking: number;
   late: number;
@@ -34,7 +41,10 @@ export type MemberDetail = {
   series: { day: number; value: number }[];
   levels: Map<number, number>;
   score: number;
+  totalScore?: number;
   modules: Record<ModuleKey, number>;
+  moduleTotals?: Record<ModuleKey, number>;
+  elapsedDays?: number;
   perfect: number;
   tracked: number;
   logged: number;
@@ -79,6 +89,7 @@ export type HabitAdminCtx = {
   MODULES: readonly {
     key: ModuleKey;
     label: string;
+    max: number;
     dot: string;
     text: string;
   }[];

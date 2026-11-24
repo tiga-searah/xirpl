@@ -13,7 +13,7 @@ export default function Home() {
 
         <AlbumPreview />
 
-        <section id="assigments">
+        <section id="assigments" className="scroll-mt-20">
           <SectionHeader
             title="Informasi"
             desc="Informasi terbaru akan segera hadir!"

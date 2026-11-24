@@ -229,7 +229,7 @@ function NotificationControl({
               htmlFor="habit-reminder"
               className="font-semibold text-foreground"
             >
-              Ingatkan check-in pukul 06.45 WIB
+              Ingatkan check-in untuk weekday pukul 06.45 WIB
             </label>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -237,7 +237,7 @@ function NotificationControl({
                   type="button"
                   className="cursor-help rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-300"
                 >
-                  Experimental
+                  Beta
                 </button>
               </TooltipTrigger>
               <TooltipContent>

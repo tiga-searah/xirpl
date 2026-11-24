@@ -397,10 +397,10 @@ export default function HabitJournal() {
               >
                 <aside
                   aria-label="Pemberitahuan Dashboard Admin"
-                  className="inline-flex w-full sm:w-auto items-center justify-between gap-3 rounded-xl border border-brand-blue/40 bg-pastel-blue/30 px-3.5 py-2 text-sm text-foreground shadow-xs dark:border-blue-500/40 dark:bg-blue-950/40 dark:text-blue-100"
+                  className="inline-flex w-full sm:w-auto items-center justify-between gap-3 rounded-xl border border-brand-blue/40 bg-pastel-blue/30 px-3.5 py-2 text-sm text-foreground shadow-xs"
                 >
                   <p className="leading-snug">
-                    <span className="font-semibold text-brand-navy dark:text-blue-100">
+                    <span className="font-semibold text-brand-navy dark:text-foreground">
                       Mencari dashboard admin?
                     </span>{' '}
                     <span className="text-slate-600 dark:text-slate-300">

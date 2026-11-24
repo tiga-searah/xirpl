@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser } from '@fe/hooks/use-user';
+import { getDayTheme } from '@fe/lib/day-theme';
 import { cn } from '@fe/lib/utils';
 import { SITE_NAME } from '@xirpl/shared';
 import { Button } from '@xirpl/shared/components/ui/button';
@@ -14,12 +15,14 @@ import {
   Code2Icon,
   HomeIcon,
   LayoutDashboardIcon,
+  LockIcon,
   TrophyIcon,
 } from 'lucide-react';
+import { motion as m } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -70,11 +73,11 @@ const bars: Bars = [
   },
 ];
 
-const active =
-  'bg-pastel-blue border-brand-blue/50 text-brand-blue shadow-[0_3px_0_0_var(--duo-shade)] hover:bg-pastel-blue hover:text-brand-blue dark:bg-blue-500/20 dark:text-blue-300';
+const activeText =
+  'text-[var(--brand-ink)] hover:bg-transparent hover:text-[var(--brand-ink)]';
 
 const itemBase =
-  'h-11 rounded-2xl border-2 border-transparent text-base font-extrabold';
+  'relative z-10 h-11 rounded-2xl border-2 border-transparent text-base font-extrabold transition-colors duration-200';
 
 // Mirrors ADMIN_ROLES in apps/api (can't import across apps).
 const ADMIN_ROLES = [
@@ -91,10 +94,20 @@ export default function AppSidebar() {
   const { user } = useUser();
   const isAdmin = !!user?.role && ADMIN_ROLES.includes(user.role);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isYellow, setIsYellow] = useState(false);
+
+  useEffect(() => {
+    setIsYellow(getDayTheme() === 'yellow');
+  }, []);
+
   // Close after navigation commits — closing on click races the route
   // transition and the sheet re-pops mid-render.
   useEffect(() => {
+    void path;
     setOpenMobile(false);
+    const activeEl = contentRef.current?.querySelector('[data-active="true"]');
+    activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [path, setOpenMobile]);
 
   return (
@@ -131,7 +144,7 @@ export default function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="whitespace-nowrap">
+      <SidebarContent ref={contentRef} className="scroll-smooth whitespace-nowrap">
         {bars.map((v, i) => (
           <SidebarGroup key={v.title ?? `group-${i}`}>
             {v.title && (
@@ -141,25 +154,52 @@ export default function AppSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="gap-1.5">
-                {v.items.map((w) => (
-                  <SidebarMenuItem key={w.name}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={path === w.path}
-                      className={cn(itemBase, path === w.path && active)}
-                    >
-                      {w.path ? (
-                        <Link href={w.path}>
-                          <w.icon /> {w.name}
-                        </Link>
-                      ) : (
-                        <div>
-                          <w.icon /> {w.name}
-                        </div>
+                {v.items.map((w) => {
+                  const isActive = path === w.path;
+                  return (
+                    <SidebarMenuItem key={w.name} className="relative">
+                      {isActive && (
+                        <m.span
+                          layoutId="sidebar-active-pill"
+                          transition={{
+                            type: 'spring',
+                            stiffness: 420,
+                            damping: 32,
+                          }}
+                          className="bg-pastel-blue border-brand-blue/50 pointer-events-none absolute inset-0 z-0 rounded-2xl border-2 shadow-[0_3px_0_0_var(--duo-shade)]"
+                        />
                       )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className={cn(itemBase, isActive && activeText)}
+                      >
+                        {w.path ? (
+                          <Link
+                            href={w.path}
+                            onClick={(e) => {
+                              e.currentTarget.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'nearest',
+                              });
+                              if (isActive) {
+                                e.preventDefault();
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                setOpenMobile(false);
+                              }
+                            }}
+                          >
+                            <w.icon /> {w.name}
+                          </Link>
+                        ) : (
+                          <div>
+                            <w.icon /> {w.name}
+                          </div>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -171,17 +211,42 @@ export default function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1.5">
-                <SidebarMenuItem>
+                <SidebarMenuItem className="relative">
+                  {path === '/bazzar-orders' && (
+                    <m.span
+                      layoutId="sidebar-active-pill"
+                      transition={{
+                        type: 'spring',
+                        stiffness: 420,
+                        damping: 32,
+                      }}
+                      className="bg-pastel-blue border-brand-blue/50 pointer-events-none absolute inset-0 z-0 rounded-2xl border-2 shadow-[0_3px_0_0_var(--duo-shade)]"
+                    />
+                  )}
                   <SidebarMenuButton
                     asChild
                     isActive={path === '/bazzar-orders'}
                     className={cn(
                       itemBase,
-                      path === '/bazzar-orders' && active,
+                      path === '/bazzar-orders' && activeText,
                     )}
                   >
-                    <Link href="/bazzar-orders">
+                    <Link
+                      href="/bazzar-orders"
+                      onClick={(e) => {
+                        e.currentTarget.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'nearest',
+                        });
+                        if (path === '/bazzar-orders') {
+                          e.preventDefault();
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          setOpenMobile(false);
+                        }
+                      }}
+                    >
                       <ClipboardCheckIcon /> Pesanan Bazzar
+                      <LockIcon className="ml-auto size-4 text-muted-foreground" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -216,6 +281,18 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <div className="border-border/70 flex flex-col gap-1 px-2 pt-3 pb-1">
+          {isYellow && (
+            <div className="mb-1 flex justify-center">
+              <Image
+                src="/images/nailong-9.webp"
+                alt="Nailong"
+                width={56}
+                height={56}
+                unoptimized
+                className="h-14 w-14 object-contain drop-shadow-[0_4px_8px_rgba(10,37,64,0.18)]"
+              />
+            </div>
+          )}
           <div className="flex items-center justify-center gap-1">
             <a
               href="https://github.com/tiga-searah/xirpl"

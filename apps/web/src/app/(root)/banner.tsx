@@ -1,6 +1,8 @@
 'use client';
 
+import { getDayTheme } from '@fe/lib/day-theme';
 import { SITE_NAME } from '@xirpl/shared';
+import XiRplMascot from '@xirpl/shared/components/mascot';
 import {
   motion as m,
   stagger,
@@ -8,7 +10,7 @@ import {
   type Variants,
 } from 'motion/react';
 import Image from 'next/image';
-import XiRplMascot from '@xirpl/shared/components/mascot';
+import { useEffect, useState } from 'react';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -34,11 +36,16 @@ const itemVariants: Variants = {
 
 export default function Banner() {
   const reduce = useReducedMotion();
+  const [isYellow, setIsYellow] = useState(false);
+
+  useEffect(() => {
+    setIsYellow(getDayTheme() === 'yellow');
+  }, []);
 
   return (
     <section
       id="banner"
-      className="relative mb-8 w-full overflow-hidden border-b-4 border-[#1268b8] bg-[#1E88E5] py-10 sm:mb-12 sm:py-14 md:py-18 lg:py-22"
+      className="relative mb-8 w-full overflow-hidden border-b-4 border-[var(--banner-border)] bg-[var(--banner-bg)] py-10 transition-colors duration-300 sm:mb-12 sm:py-14 md:py-18 lg:py-22"
     >
       {/* Repeating diagonal line stripes (45deg) for the entire banner width
         <div
@@ -104,9 +111,9 @@ export default function Banner() {
         >
           {/* Left Column: Heading & Branding */}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            {/* Yellow pill badge */}
+            {/* Pill badge */}
             <m.div variants={itemVariants} className="mb-4 sm:mb-6">
-              <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#0a2540] bg-brand-yellow px-4 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-brand-navy shadow-[0_3px_0_0_#0a2540]">
+              <span className="inline-flex items-center gap-2 rounded-full border-2 border-[#0a2540] bg-[var(--banner-pill-bg)] px-4 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[var(--banner-pill-fg)] shadow-[0_3px_0_0_#0a2540]">
                 <span className="font-mono text-[11px] font-black" aria-hidden="true">
                   &gt;_
                 </span>
@@ -117,7 +124,7 @@ export default function Banner() {
             {/* Subheading */}
             <m.p
               variants={itemVariants}
-              className="font-display text-lg font-bold tracking-tight text-white uppercase sm:text-xl md:text-2xl lg:text-3xl"
+              className="font-display text-lg font-bold tracking-tight text-[var(--banner-fg)] uppercase sm:text-xl md:text-2xl lg:text-3xl"
             >
               Welcome to the class of
             </m.p>
@@ -125,7 +132,7 @@ export default function Banner() {
             {/* Dominant Display Heading */}
             <m.h1
               variants={itemVariants}
-              className="font-display my-2 text-6xl font-black tracking-tight text-white sm:text-7xl md:my-3 md:text-8xl lg:text-9xl leading-none drop-shadow-md"
+              className="font-display my-2 text-6xl font-black tracking-tight text-[var(--banner-fg)] sm:text-7xl md:my-3 md:text-8xl lg:text-9xl leading-none drop-shadow-md"
             >
               {SITE_NAME}
             </m.h1>
@@ -133,10 +140,10 @@ export default function Banner() {
             {/* Subline */}
             <m.p
               variants={itemVariants}
-              className="font-display text-lg font-bold text-white sm:text-xl md:text-2xl lg:text-3xl"
+              className="font-display text-lg font-bold text-[var(--banner-fg)] sm:text-xl md:text-2xl lg:text-3xl"
             >
               of{' '}
-              <strong className="font-black text-brand-yellow drop-shadow-xs">
+              <strong className="font-black text-[var(--banner-highlight)] drop-shadow-xs">
                 SMK N 1 Kandeman
               </strong>
             </m.p>
@@ -152,11 +159,28 @@ export default function Banner() {
               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               className="relative w-full max-w-[360px] sm:max-w-[440px] md:max-w-[480px] lg:max-w-[520px]"
             >
-              {/* Dark Navy Shadow Plate / Backing Layer */}
-              <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-3xl sm:rounded-[2.25rem] bg-[#0c3e70] opacity-80" />
+              {/* Dark Shadow Plate / Backing Layer */}
+              <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-3xl sm:rounded-[2.25rem] bg-[var(--banner-shadow-plate)] opacity-80" />
 
               {/* White Polaroid Card */}
               <div className="relative rotate-[-3deg] rounded-3xl sm:rounded-[2.25rem] border-[3px] border-[#0a2540] bg-white p-3 pb-4 sm:p-4 sm:pb-5 shadow-2xl dark:bg-white">
+                {isYellow && (
+                  <m.div
+                    initial={reduce ? false : { opacity: 0, y: 12, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+                    className="pointer-events-none absolute -top-14 -left-4 z-30 w-24 -rotate-12 sm:-top-18 sm:-left-6 sm:w-32"
+                  >
+                    <Image
+                      src="/images/nailong-1.webp"
+                      alt="Nailong"
+                      width={130}
+                      height={130}
+                      unoptimized
+                      className="h-auto w-full drop-shadow-[0_6px_12px_rgba(10,37,64,0.28)]"
+                    />
+                  </m.div>
+                )}
                 {/* Main Photo */}
                 <div className="relative aspect-[16/11] w-full overflow-hidden rounded-2xl border-2 border-[#0a2540] bg-slate-900 shadow-inner">
                   <Image
@@ -213,6 +237,24 @@ export default function Banner() {
           </m.div>
         </m.div>
       </div>
+
+      {isYellow && (
+        <m.div
+          initial={reduce ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="pointer-events-none absolute bottom-0 left-4 z-10 hidden w-28 lg:block xl:left-10 xl:w-36"
+        >
+          <Image
+            src="/images/nailong-2.webp"
+            alt="Nailong"
+            width={150}
+            height={150}
+            unoptimized
+            className="h-auto w-full drop-shadow-[0_10px_18px_rgba(10,37,64,0.25)]"
+          />
+        </m.div>
+      )}
     </section>
   );
 }

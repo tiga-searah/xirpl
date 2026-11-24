@@ -3,7 +3,13 @@
 import type { UserModel } from '@be/modules/user/model';
 
 type IProfile = UserModel['User'];
+
+import { useStreak } from '@fe/hooks/use-streak';
+import { useUser } from '@fe/hooks/use-user';
+import api, { fileUrl } from '@fe/lib/api';
+import { cn } from '@fe/lib/utils';
 import { SITE_NAME } from '@xirpl/shared';
+import { Button } from '@xirpl/shared/components/ui/button';
 import { revealTheme } from '@xirpl/shared/theme-transition';
 import {
   AlignLeftIcon,
@@ -11,6 +17,7 @@ import {
   LogOutIcon,
   MoonIcon,
   SunIcon,
+  UserRoundIcon,
 } from 'lucide-react';
 import { motion as m } from 'motion/react';
 import Image from 'next/image';
@@ -18,13 +25,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { useStreak } from '@fe/hooks/use-streak';
 import { fmtDate } from '../../../data/habit-data';
-import { useUser } from '@fe/hooks/use-user';
-import api from '@fe/lib/api';
-import { cn } from '@fe/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Button } from '@xirpl/shared/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +56,10 @@ export default function NavBar() {
             y: expanded ? -20 : 0,
           }}
           transition={{ type: 'spring', duration: 0.6 }}
-          className={cn('flex items-center gap-1', expanded && 'pointer-events-none')}
+          className={cn(
+            'flex items-center gap-1',
+            expanded && 'pointer-events-none',
+          )}
         >
           <Button
             size="icon"
@@ -122,7 +127,8 @@ export default function NavBar() {
             >
               <Avatar className="border-border size-10 border-2">
                 <AvatarImage
-                  src={user?.avatar_url ?? '/images/profile_picture.jpg'}
+                  src={user?.avatar_url ? fileUrl(user.avatar_url) : undefined}
+                  alt=""
                 />
                 <AvatarFallback>
                   {(user?.display_name || user?.username)?.charAt(0)}
@@ -130,17 +136,13 @@ export default function NavBar() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-fit overflow-hidden rounded-2xl p-0"
+              className="w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl p-0"
               align="end"
             >
-              {user ? (
-                <Profile user={user} />
-              ) : (
-                <Link href={`/login?r=${pathname}`}>
-                  {' '}
-                  <Profile />{' '}
-                </Link>
-              )}
+              <Profile
+                user={user}
+                loginHref={`/login?r=${encodeURIComponent(pathname)}`}
+              />
               <DropdownMenuSeparator className="m-0" />
               <ThemeItem />
             </DropdownMenuContent>
@@ -169,8 +171,12 @@ function ThemeItem() {
         if (n === systemTheme) n = 'system';
         // Reveal from the item's center; onSelect carries no pointer coords.
         const el = e.currentTarget as HTMLElement | null;
-        const { left = 0, top = 0, width = 0, height = 0 } =
-          el?.getBoundingClientRect() ?? {};
+        const {
+          left = 0,
+          top = 0,
+          width = 0,
+          height = 0,
+        } = el?.getBoundingClientRect() ?? {};
         revealTheme(
           { clientX: left + width / 2, clientY: top + height / 2 },
           () => setTheme(n),
@@ -183,7 +189,7 @@ function ThemeItem() {
   );
 }
 
-function Profile({ user }: { user?: IProfile }) {
+function Profile({ user, loginHref }: { user?: IProfile; loginHref: string }) {
   const handleLogout = async () => {
     await api.auth.logout.post();
     location.reload();
@@ -191,35 +197,40 @@ function Profile({ user }: { user?: IProfile }) {
 
   return (
     <>
-      <div
-        className={cn(
-          'grid grid-cols-[1fr_auto] grid-rows-[auto_auto] gap-x-2 px-4 py-2',
-          !user && 'hover:bg-accent',
-        )}
+      <DropdownMenuItem
+        asChild
+        className="cursor-pointer gap-3 rounded-none px-4 py-4 hover:bg-accent focus:bg-accent"
       >
-        <Avatar className="row-span-2 self-center">
-          <AvatarImage
-            src={user?.avatar_url ?? '/images/profile_picture.jpg'}
-          />
-          <AvatarFallback>
-            {(user?.display_name || user?.username)?.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <h2 className="font-bold">
-          {user?.display_name ?? user?.username ?? 'Masuk'}
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          {user?.email ?? 'Klik untuk log in'}
-        </p>
-      </div>
+        <Link href={user ? '/profile' : loginHref}>
+          <Avatar className="size-11 shrink-0 border-2 border-border">
+            <AvatarImage
+              src={user?.avatar_url ? fileUrl(user.avatar_url) : undefined}
+              alt=""
+            />
+            <AvatarFallback className="bg-pastel-blue font-bold text-brand-navy">
+              {(user?.display_name?.trim() || user?.username)
+                ?.charAt(0)
+                .toUpperCase() || <UserRoundIcon aria-hidden />}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-bold">
+              {user?.display_name?.trim() || user?.username || 'Masuk'}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user?.email ?? 'Masuk ke akun kamu'}
+            </p>
+          </div>
+        </Link>
+      </DropdownMenuItem>
       {user && (
         <>
           <DropdownMenuSeparator className="m-0" />
           <DropdownMenuItem
-            className="h-10 cursor-pointer justify-center font-bold"
+            className="min-h-11 cursor-pointer justify-center rounded-none font-bold"
             onClick={handleLogout}
           >
-            <LogOutIcon /> Log Out
+            <LogOutIcon aria-hidden /> Log Out
           </DropdownMenuItem>
         </>
       )}

@@ -3,6 +3,7 @@ import AdminDashboard from '@xirpl/shared/components/habit-admin/dashboard';
 import { HabitAdminProvider } from '@xirpl/shared/components/habit-admin/context';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { AdminNailong } from '../../components/day-theme-sync';
 import { adminCtx } from '../../data/admin-ctx';
 
 export const metadata: Metadata = {
@@ -13,9 +14,15 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <HabitAdminProvider value={adminCtx}>
-      <Suspense>
-        <AdminDashboard />
-      </Suspense>
+      <div className="relative">
+        <AdminNailong
+          src="/images/nailong-11.webp"
+          className="pointer-events-none fixed right-6 bottom-6 z-40 hidden w-20 sm:block drop-shadow-[0_8px_16px_rgba(10,37,64,0.25)]"
+        />
+        <Suspense>
+          <AdminDashboard />
+        </Suspense>
+      </div>
     </HabitAdminProvider>
   );
 }

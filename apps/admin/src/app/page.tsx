@@ -1,3 +1,4 @@
+import { AdminNailong } from '../components/day-theme-sync';
 import XiRplMascot from '@xirpl/shared/components/mascot';
 import { SITE_NAME } from '@xirpl/shared/constants';
 import {
@@ -46,7 +47,13 @@ export default function AdminHome() {
   return (
     <main className="mx-auto w-full max-w-360 px-4 pb-16 sm:px-6">
       <section className="flex flex-col items-center gap-3 py-12 text-center">
-        <XiRplMascot pose="cheer" size={140} className="h-auto w-32 sm:w-36" />
+        <div className="flex items-end justify-center gap-3">
+          <XiRplMascot pose="cheer" size={140} className="h-auto w-32 sm:w-36" />
+          <AdminNailong
+            src="/images/nailong-10.webp"
+            className="h-auto w-24 sm:w-28 drop-shadow-[0_6px_12px_rgba(10,37,64,0.2)]"
+          />
+        </div>
         <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
           {SITE_NAME}
         </h1>

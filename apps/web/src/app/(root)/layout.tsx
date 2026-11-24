@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import '../globals.css';
 import { Analytics } from '@fe/components/analytics';
+import { DayThemeSync } from '@fe/components/day-theme-sync';
 import NavBar from '@fe/components/layout/navbar';
 import AppSidebar from '@fe/components/layout/sidebar';
-import { ThemeProvider } from '@xirpl/shared/components/theme-provider';
 import { SidebarProvider } from '@fe/components/ui/sidebar';
-import { TooltipProvider } from '@xirpl/shared/components/ui/tooltip';
+import { UserProvider } from '@fe/hooks/use-user';
+import { DAY_THEME_INIT_SCRIPT } from '@fe/lib/day-theme';
 import { SITE_NAME } from '@xirpl/shared';
+import { ThemeProvider } from '@xirpl/shared/components/theme-provider';
+import { TooltipProvider } from '@xirpl/shared/components/ui/tooltip';
 import { DM_Sans, Fredoka } from 'next/font/google';
 import { cookies } from 'next/headers';
 
@@ -35,20 +38,25 @@ export default async function RootLayout({
   return (
     <html lang="id" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline day-theme init script prevents FOUC */}
+        <script dangerouslySetInnerHTML={{ __html: DAY_THEME_INIT_SCRIPT }} />
         <Analytics />
       </head>
       <body
         className={`min-h-svh overflow-x-clip antialiased ${fredoka.variable} ${dmSans.variable}`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <DayThemeSync />
           <TooltipProvider>
-            <SidebarProvider defaultOpen={defaultOpen}>
-              <AppSidebar />
-              <main className="min-h-svh min-w-0 flex-1">
-                <NavBar />
-                {children}
-              </main>
-            </SidebarProvider>
+            <UserProvider>
+              <SidebarProvider defaultOpen={defaultOpen}>
+                <AppSidebar />
+                <main className="min-h-svh min-w-0 flex-1">
+                  <NavBar />
+                  {children}
+                </main>
+              </SidebarProvider>
+            </UserProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

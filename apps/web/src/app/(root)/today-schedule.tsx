@@ -53,7 +53,7 @@ export default function TodaySchedule() {
   const isToday = targetDay === day;
 
   return (
-    <section id="today-schedule">
+    <section id="today-schedule" className="scroll-mt-20">
       <SectionHeader
         title={isToday ? 'Jadwal Hari Ini' : 'Jadwal Besok'}
         desc={now ? fmtDay(shownDate ?? now) : 'Memuat hari ini...'}
@@ -124,7 +124,7 @@ export default function TodaySchedule() {
                       </span>
                     )}
                     {active && (
-                      <span className="bg-brand-blue duo-card flex shrink-0 items-center gap-1 rounded-full border-transparent px-3 py-1 text-xs font-extrabold tracking-wide uppercase text-white [--duo-depth:3px] [--duo-shade:#1565c0]">
+                      <span className="bg-brand-blue duo-card flex shrink-0 items-center gap-1 rounded-full border-transparent px-3 py-1 text-xs font-extrabold tracking-wide uppercase text-[var(--brand-primary-fg)] [--duo-depth:3px] [--duo-shade:var(--brand-primary-shadow)]">
                         <ClockIcon className="size-3.5" /> Sekarang
                       </span>
                     )}
@@ -170,7 +170,7 @@ export default function TodaySchedule() {
 
       <Link
         href="/schedules/subject"
-        className="text-brand-blue border-brand-blue/40 bg-card duo-card duo-press mt-5 inline-flex h-11 items-center rounded-2xl px-5 text-sm font-extrabold tracking-wide uppercase dark:text-blue-300"
+        className="text-[var(--brand-ink)] border-brand-blue/40 bg-card duo-card duo-press mt-5 inline-flex h-11 items-center rounded-2xl px-5 text-sm font-extrabold tracking-wide uppercase"
       >
         Lihat jadwal lengkap →
       </Link>

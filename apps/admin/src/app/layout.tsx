@@ -6,6 +6,8 @@ import { SITE_NAME } from '@xirpl/shared/constants';
 import { AdminGate } from '../components/admin-gate';
 import { AdminHeader } from '../components/admin-header';
 import { AdminSidebar } from '../components/admin-sidebar';
+import { DayThemeSync } from '../components/day-theme-sync';
+import { DAY_THEME_INIT_SCRIPT } from '../lib/day-theme';
 import { SidebarProvider } from '@xirpl/shared/components/ui/sidebar';
 import { cookies } from 'next/headers';
 import './globals.css';
@@ -22,8 +24,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const defaultOpen = (await cookies()).get('sidebar_state')?.value === 'true';
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline day-theme init script prevents FOUC */}
+        <script dangerouslySetInnerHTML={{ __html: DAY_THEME_INIT_SCRIPT }} />
+      </head>
       <body className={`min-h-svh overflow-x-clip antialiased ${fredoka.variable} ${dmSans.variable}`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <DayThemeSync />
           <TooltipProvider>
             <AdminGate>
               <SidebarProvider defaultOpen={defaultOpen}>

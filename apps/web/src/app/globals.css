@@ -14,13 +14,13 @@
   --color-gray-875: oklch(0.2325 0.03 263);
 }
 
-/* XI RPL mascot palette: blue + yellow + navy, plus pastels for section accents. */
+/* XI RPL mascot palette: blue + yellow + navy (plus dynamic green/yellow day themes), and pastels for section accents. */
 @theme inline {
-  --color-brand-blue: #1e88e5;
+  --color-brand-blue: var(--brand-primary);
   --color-brand-yellow: #ffc93c;
   --color-brand-navy: #0a2540;
   --color-pastel-yellow: #ffe8a3;
-  --color-pastel-blue: #bfdfff;
+  --color-pastel-blue: var(--brand-pastel);
   --color-pastel-pink: #ffc9de;
   --color-pastel-green: #c8f2d0;
   --color-pastel-purple: #d8ccff;
@@ -181,6 +181,19 @@
   color-scheme: light;
   --radius: 1rem;
   --duo-shade: rgb(10 37 64 / 0.15);
+  --brand-primary: #1e88e5;
+  --brand-primary-deep: #1268b8;
+  --brand-primary-shadow: #0c3e70;
+  --brand-primary-fg: #ffffff;
+  --brand-ink: #1e88e5;
+  --brand-pastel: #bfdfff;
+  --banner-pill-bg: #ffc93c;
+  --banner-pill-fg: #0a2540;
+  --banner-highlight: #ffc93c;
+  --banner-bg: #1e88e5;
+  --banner-border: #1268b8;
+  --banner-fg: #ffffff;
+  --banner-shadow-plate: #0c3e70;
   --background: #fffdf7;
   --foreground: #0a2540;
   --card: #ffffff;
@@ -220,44 +233,207 @@
 
 .dark {
   color-scheme: dark;
-  --duo-shade: rgb(0 0 0 / 0.55);
-  --background: #08192b;
-  --foreground: #eaf2fb;
-  --card: #0d2338;
-  --card-foreground: #eaf2fb;
-  --popover: #0d2338;
-  --popover-foreground: #eaf2fb;
+  --duo-shade: rgb(0 0 0 / 0.45);
+  --brand-primary: #3fa9f5;
+  --brand-primary-deep: #1565c0;
+  --brand-primary-shadow: #092e54;
+  --brand-primary-fg: #07192b;
+  --brand-ink: #60a5fa;
+  --brand-pastel: #172b40;
+  --banner-bg: #1565c0;
+  --banner-border: #0e478a;
+  --banner-fg: #f8fafc;
+  --banner-shadow-plate: #092b54;
+  --banner-pill-bg: #ffc93c;
+  --banner-pill-fg: #0a2540;
+  --banner-highlight: #ffc93c;
+  --background: #0f141b;
+  --foreground: #edf2f7;
+  --card: #161d26;
+  --card-foreground: #edf2f7;
+  --popover: #161d26;
+  --popover-foreground: #edf2f7;
   --primary: #3fa9f5;
-  --primary-foreground: #06192b;
-  --secondary: #14314b;
-  --secondary-foreground: #eaf2fb;
-  --muted: #14314b;
-  --muted-foreground: #9db4cc;
-  --accent: #14344f;
-  --accent-foreground: #bfdfff;
+  --primary-foreground: #07192b;
+  --secondary: #1e2733;
+  --secondary-foreground: #edf2f7;
+  --muted: #1e2733;
+  --muted-foreground: #9ba8b8;
+  --accent: #182a3d;
+  --accent-foreground: #bfdbfe;
   --destructive: oklch(0.68 0.2 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
+  --border: #232d3b;
+  --input: #283444;
   --ring: #3fa9f5;
   --chart-1: oklch(0.82 0.17 70);
   --chart-2: oklch(0.7 0.17 165);
   --chart-3: oklch(0.6 0.18 290);
   --chart-4: oklch(0.65 0.2 30);
   --chart-5: oklch(0.72 0.18 240);
-  --sidebar: #0a1f33;
-  --sidebar-foreground: #eaf2fb;
+  --sidebar: #131922;
+  --sidebar-foreground: #edf2f7;
   --sidebar-primary: #3fa9f5;
-  --sidebar-primary-foreground: #06192b;
-  --sidebar-accent: #14344f;
-  --sidebar-accent-foreground: #bfdfff;
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-primary-foreground: #07192b;
+  --sidebar-accent: #182a3d;
+  --sidebar-accent-foreground: #bfdbfe;
+  --sidebar-border: #212b38;
   --sidebar-ring: #3fa9f5;
 
   /* Grid */
-  --grid: oklch(0.22 0.05 277);
-  --grid-header: oklch(0.19 0.05 279);
+  --grid: oklch(0.22 0.03 260);
+  --grid-header: oklch(0.19 0.03 260);
   --grid-foreground: oklch(0.95 0.008 250);
-  --grid-border: oklch(0.32 0.05 272);
+  --grid-border: oklch(0.32 0.03 260);
+}
+
+/* Tuesday (Selasa): fresh emerald-green palette */
+html[data-day-theme="green"] {
+  --brand-primary: #169347;
+  --brand-primary-deep: #0f6b33;
+  --brand-primary-shadow: #0a4220;
+  --brand-primary-fg: #ffffff;
+  --brand-ink: #15803d;
+  --brand-pastel: #c8f2d0;
+  --banner-pill-bg: #ffc93c;
+  --banner-pill-fg: #0a2540;
+  --banner-highlight: #ffc93c;
+  --banner-bg: #169347;
+  --banner-border: #0f6b33;
+  --banner-fg: #ffffff;
+  --banner-shadow-plate: #0a4220;
+  --background: #f8fcf8;
+  --secondary: #ebf6ed;
+  --muted: #ebf6ed;
+  --muted-foreground: #4c6b57;
+  --accent: #e4f7e8;
+  --accent-foreground: #14532d;
+  --border: #c5dfc9;
+  --input: #c5dfc9;
+  --primary: #169347;
+  --primary-foreground: #ffffff;
+  --ring: #169347;
+  --sidebar-primary: #169347;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e4f7e8;
+  --sidebar-accent-foreground: #14532d;
+  --sidebar-border: #c5dfc9;
+  --sidebar-ring: #169347;
+}
+
+html.dark[data-day-theme="green"] {
+  --brand-primary: #34d399;
+  --brand-primary-deep: #15803d;
+  --brand-primary-shadow: #06351d;
+  --brand-primary-fg: #052014;
+  --brand-ink: #4ade80;
+  --brand-pastel: #143325;
+  --banner-bg: #116e37;
+  --banner-border: #0b4f27;
+  --banner-fg: #f8fafc;
+  --banner-shadow-plate: #073319;
+  --banner-pill-bg: #ffc93c;
+  --banner-pill-fg: #0a2540;
+  --banner-highlight: #ffc93c;
+  --background: #0e1512;
+  --card: #151e1a;
+  --popover: #151e1a;
+  --foreground: #edf5f0;
+  --card-foreground: #edf5f0;
+  --popover-foreground: #edf5f0;
+  --primary: #34d399;
+  --primary-foreground: #052014;
+  --secondary: #1d2923;
+  --secondary-foreground: #edf5f0;
+  --muted: #1d2923;
+  --muted-foreground: #96ada0;
+  --accent: #143325;
+  --accent-foreground: #a7f3d0;
+  --border: #24382d;
+  --input: #2b4336;
+  --ring: #34d399;
+  --sidebar: #111a16;
+  --sidebar-foreground: #edf5f0;
+  --sidebar-primary: #34d399;
+  --sidebar-primary-foreground: #052014;
+  --sidebar-accent: #143325;
+  --sidebar-accent-foreground: #a7f3d0;
+  --sidebar-border: #213429;
+  --sidebar-ring: #34d399;
+}
+
+/* Friday (Jumat) & November 25: bright yellow palette (matching Yeni Sri Utami's yellow-400 / #ffff00) */
+html[data-day-theme="yellow"] {
+  --brand-primary: #facc15;
+  --brand-primary-deep: #ca8a04;
+  --brand-primary-shadow: #854d0e;
+  --brand-primary-fg: #0a2540;
+  --brand-ink: #a16207;
+  --brand-pastel: #fef08a;
+  --banner-pill-bg: #ffffff;
+  --banner-pill-fg: #a16207;
+  --banner-highlight: #fef08a;
+  --banner-bg: #eab308;
+  --banner-border: #ca8a04;
+  --banner-fg: #ffffff;
+  --banner-shadow-plate: #854d0e;
+  --background: #fffef5;
+  --secondary: #fef9c3;
+  --muted: #fef9c3;
+  --muted-foreground: #6b633c;
+  --accent: #fef08a;
+  --accent-foreground: #713f12;
+  --border: #e5d88e;
+  --input: #e5d88e;
+  --primary: #facc15;
+  --primary-foreground: #0a2540;
+  --ring: #facc15;
+  --sidebar-primary: #facc15;
+  --sidebar-primary-foreground: #0a2540;
+  --sidebar-accent: #fef08a;
+  --sidebar-accent-foreground: #713f12;
+  --sidebar-border: #e5d88e;
+  --sidebar-ring: #facc15;
+}
+
+html.dark[data-day-theme="yellow"] {
+  --brand-primary: #facc15;
+  --brand-primary-deep: #ca8a04;
+  --brand-primary-shadow: #4a3505;
+  --brand-primary-fg: #181409;
+  --brand-ink: #fde047;
+  --brand-pastel: #2b2712;
+  --banner-pill-bg: #ffffff;
+  --banner-pill-fg: #a16207;
+  --banner-highlight: #fef08a;
+  --banner-bg: #ca8a04;
+  --banner-border: #a16207;
+  --banner-fg: #ffffff;
+  --banner-shadow-plate: #713f12;
+  --background: #121316;
+  --card: #1a1b20;
+  --popover: #1a1b20;
+  --foreground: #f4f2ea;
+  --card-foreground: #f4f2ea;
+  --popover-foreground: #f4f2ea;
+  --primary: #facc15;
+  --primary-foreground: #181409;
+  --secondary: #24252b;
+  --secondary-foreground: #f4f2ea;
+  --muted: #24252b;
+  --muted-foreground: #aba799;
+  --accent: #2b2712;
+  --accent-foreground: #fde047;
+  --border: #333024;
+  --input: #3d392a;
+  --ring: #facc15;
+  --sidebar: #16171b;
+  --sidebar-foreground: #f4f2ea;
+  --sidebar-primary: #facc15;
+  --sidebar-primary-foreground: #181409;
+  --sidebar-accent: #2b2712;
+  --sidebar-accent-foreground: #fde047;
+  --sidebar-border: #2d2a1f;
+  --sidebar-ring: #facc15;
 }
 
 @layer base {

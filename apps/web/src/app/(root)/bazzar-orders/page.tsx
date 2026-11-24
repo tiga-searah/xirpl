@@ -55,6 +55,7 @@ import {
   ChevronDown,
   Coffee,
   LayoutList,
+  LockIcon,
   Pencil,
   RefreshCw,
   Split,
@@ -379,13 +380,16 @@ function BazzarOrdersSkeleton({ canManage = false }: { canManage?: boolean }) {
   );
 }
 
+const BAZZAR_LOCKED = true;
+
 export default function BazzarOrdersPage() {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const [students] = useStudents();
   const canManage =
-    user?.id === 'd1f8f009-f157-49eb-abc8-44ae6a55a409' ||
-    user?.role === 'developer';
+    !BAZZAR_LOCKED &&
+    (user?.id === 'd1f8f009-f157-49eb-abc8-44ae6a55a409' ||
+      user?.role === 'developer');
   const [orders, setOrders] = useState<BazzarOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -1077,6 +1081,19 @@ export default function BazzarOrdersPage() {
           className="hidden h-auto w-28 shrink-0 sm:block sm:w-36"
         />
       </PageHero>
+
+      {BAZZAR_LOCKED && (
+        <div
+          role="status"
+          className="border-brand-yellow bg-pastel-yellow/70 text-brand-navy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm font-bold dark:bg-amber-400/15 dark:text-amber-200"
+        >
+          <LockIcon className="size-4 shrink-0" />
+          <span>
+            Halaman bazzar sedang dikunci (hanya lihat). Pesanan tidak dapat
+            ditambah, diubah, atau dihapus.
+          </span>
+        </div>
+      )}
 
       {error && (
         <p

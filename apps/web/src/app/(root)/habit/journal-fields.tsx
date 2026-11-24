@@ -469,7 +469,7 @@ export function JournalFields({
           size="lg"
           pointer
           disabled={!editable || !!checkedAt || gate === 'closed' || busy}
-          className="w-full border-[#1565c0] sm:w-auto sm:min-w-48"
+          className="w-full border-[var(--brand-primary-deep)] sm:w-auto sm:min-w-48"
           onClick={checkIn}
         >
           {checkedAt ? (

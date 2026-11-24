@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import '../globals.css';
 import { Analytics } from '@fe/components/analytics';
+import { DayThemeSync } from '@fe/components/day-theme-sync';
+import { DAY_THEME_INIT_SCRIPT } from '@fe/lib/day-theme';
 import { ThemeProvider } from '@xirpl/shared/components/theme-provider';
 import { SITE_NAME } from '@xirpl/shared';
 import { DM_Sans, Fredoka } from 'next/font/google';
@@ -28,12 +30,15 @@ export default async function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: inline day-theme init script prevents FOUC */}
+        <script dangerouslySetInnerHTML={{ __html: DAY_THEME_INIT_SCRIPT }} />
         <Analytics />
       </head>
       <body
         className={`antialiased ${fredoka.variable} ${dmSans.variable} flex min-h-dvh items-center justify-center`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <DayThemeSync />
           <Suspense>{children}</Suspense>
         </ThemeProvider>
       </body>

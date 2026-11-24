@@ -1,8 +1,8 @@
 'use client';
 
 import SectionHeader from '@fe/components/section-header';
-import XiRplMascot from '@xirpl/shared/components/mascot';
 import { AspectRatio } from '@fe/components/ui/aspect-ratio';
+import XiRplMascot from '@xirpl/shared/components/mascot';
 import { motion as m } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ const recent = albums.slice(-4).reverse();
 
 export default function AlbumPreview() {
   return (
-    <section id="pictures">
+    <section id="pictures" className="scroll-mt-20">
       <SectionHeader
         title="Album"
         desc="Foto kita adalah kenangan kita di masa lampau. Bernostalgialah!"
@@ -72,7 +72,7 @@ export default function AlbumPreview() {
 
       <Link
         href="/albums"
-        className="text-brand-blue border-brand-blue/40 bg-card duo-card duo-press mt-5 inline-flex h-11 items-center rounded-2xl px-5 text-sm font-extrabold tracking-wide uppercase dark:text-blue-300"
+        className="text-[var(--brand-ink)] border-brand-blue/40 bg-card duo-card duo-press mt-5 inline-flex h-11 items-center rounded-2xl px-5 text-sm font-extrabold tracking-wide uppercase"
       >
         Lihat semua album →
       </Link>

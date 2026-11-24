@@ -1,17 +1,14 @@
 'use client';
 
-import XiRplMascot from '@xirpl/shared/components/mascot';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@fe/components/ui/avatar';
-import { Button } from '@xirpl/shared/components/ui/button';
-import { Skeleton } from '@xirpl/shared/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@fe/components/ui/avatar';
 import { useStudents } from '@fe/hooks/use-students';
 import { useUser } from '@fe/hooks/use-user';
 import api, { fileUrl } from '@fe/lib/api';
+import { getDayTheme } from '@fe/lib/day-theme';
 import { cn } from '@fe/lib/utils';
+import XiRplMascot from '@xirpl/shared/components/mascot';
+import { Button } from '@xirpl/shared/components/ui/button';
+import { Skeleton } from '@xirpl/shared/components/ui/skeleton';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -21,6 +18,7 @@ import {
   TrophyIcon,
 } from 'lucide-react';
 import { AnimatePresence, motion as m, useReducedMotion } from 'motion/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,11 +62,7 @@ const PODIUM_PLACE = [
 
 // Name initial for avatar circles without a photo.
 const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)[0]
-    ?.charAt(0)
-    .toUpperCase() ?? '';
+  name.split(/\s+/).filter(Boolean)[0]?.charAt(0).toUpperCase() ?? '';
 
 function BoardAvatar({
   name,
@@ -83,7 +77,7 @@ function BoardAvatar({
   return (
     <Avatar
       className={cn(
-        'after:border-brand-navy/20 dark:after:border-white/20',
+        'after:border-brand-navy/20 dark:after:border-border',
         className,
       )}
     >
@@ -195,18 +189,23 @@ function PodiumCard({
         {entry.rank}
       </span>
 
-      <BoardAvatar
-        name={entry.name}
-        avatarUrl={avatarUrl}
-        className={medal.avatar}
-      />
-
-      <p
-        className="max-w-full truncate text-sm font-extrabold text-brand-navy"
-        title={entry.name}
+      <Link
+        href={`/users/${entry.user_id}`}
+        aria-label={`Lihat profil ${entry.name}`}
+        className="flex max-w-full flex-col items-center gap-1.5 rounded-2xl text-brand-navy focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-navy"
       >
-        {entry.name}
-      </p>
+        <BoardAvatar
+          name={entry.name}
+          avatarUrl={avatarUrl}
+          className={medal.avatar}
+        />
+        <span
+          className="max-w-full truncate text-sm font-extrabold"
+          title={entry.name}
+        >
+          {entry.name}
+        </span>
+      </Link>
 
       <p className="flex items-baseline justify-center gap-1">
         <span
@@ -325,7 +324,7 @@ export default function LeaderboardBoard() {
         initial={reduce ? false : { opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mb-8 overflow-hidden rounded-[2rem] border-2 border-brand-blue/25 bg-pastel-blue/50 p-6 sm:p-8 dark:border-blue-400/20 dark:bg-blue-500/10"
+        className="relative mb-8 overflow-hidden rounded-[2rem] border-2 border-brand-blue/25 bg-pastel-blue/50 p-6 sm:p-8 dark:bg-pastel-blue/40"
       >
         {/* biome-ignore lint/a11y/noSvgWithoutTitle: purely decorative circle, hidden from screen readers */}
         <svg
@@ -351,6 +350,16 @@ export default function LeaderboardBoard() {
         </svg>
 
         <div className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          {getDayTheme() === 'yellow' && (
+            <Image
+              src="/images/nailong-7.webp"
+              alt="Nailong"
+              width={104}
+              height={104}
+              unoptimized
+              className="pointer-events-none absolute -top-2 right-0 hidden h-auto w-24 sm:block drop-shadow-[0_6px_12px_rgba(10,37,64,0.2)]"
+            />
+          )}
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border-2 border-brand-navy bg-brand-yellow px-3.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-brand-navy shadow-[0_3px_0_0_#0a2540]">
               <span className="font-mono" aria-hidden>
@@ -470,9 +479,9 @@ export default function LeaderboardBoard() {
                   initial={reduce ? false : { opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="duo-card flex items-center gap-3 rounded-2xl border-2 border-brand-blue/40 bg-pastel-blue/70 px-4 py-3 [--duo-shade:rgba(30,136,229,0.35)] dark:bg-blue-500/15"
+                  className="duo-card flex items-center gap-3 rounded-2xl border-2 border-brand-blue/40 bg-pastel-blue/70 px-4 py-3 [--duo-shade:color-mix(in_srgb,var(--brand-primary)_35%,transparent)]"
                 >
-                  <span className="rounded-full bg-brand-blue px-2 py-0.5 text-[10px] font-black tracking-wide text-white uppercase">
+                  <span className="rounded-full bg-brand-blue px-2 py-0.5 text-[10px] font-black tracking-wide text-[var(--brand-primary-fg)] uppercase">
                     Kamu
                   </span>
                   <span className="text-sm font-extrabold tabular-nums text-foreground">
@@ -513,22 +522,27 @@ export default function LeaderboardBoard() {
                               {entry.rank}
                             </span>
 
-                            <BoardAvatar
-                              name={entry.name}
-                              avatarUrl={
-                                avatars.get(entry.user_id) ?? entry.avatar_url
-                              }
-                              className="size-10 text-xs"
-                            />
-
-                            <span
-                              className="min-w-0 truncate text-sm font-bold text-foreground"
-                              title={entry.name}
+                            <Link
+                              href={`/users/${entry.user_id}`}
+                              aria-label={`Lihat profil ${entry.name}`}
+                              className="flex min-h-11 min-w-0 items-center gap-3 rounded-xl text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                             >
-                              {entry.name}
-                            </span>
+                              <BoardAvatar
+                                name={entry.name}
+                                avatarUrl={
+                                  avatars.get(entry.user_id) ?? entry.avatar_url
+                                }
+                                className="size-10 text-xs"
+                              />
+                              <span
+                                className="min-w-0 truncate text-sm font-bold"
+                                title={entry.name}
+                              >
+                                {entry.name}
+                              </span>
+                            </Link>
                             {me && (
-                              <span className="shrink-0 rounded-full bg-brand-blue px-1.5 py-0.5 text-[10px] font-black tracking-wide text-white uppercase">
+                              <span className="shrink-0 rounded-full bg-brand-blue px-1.5 py-0.5 text-[10px] font-black tracking-wide text-[var(--brand-primary-fg)] uppercase">
                                 Kamu
                               </span>
                             )}

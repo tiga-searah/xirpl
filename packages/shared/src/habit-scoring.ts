@@ -18,6 +18,13 @@ export function getWibHour(d: Date | string): number {
   const date = typeof d === 'string' ? new Date(d) : d;
   return new Date(date.getTime() + TZ_OFFSET * 60_000).getUTCHours();
 }
+
+/** WIB minutes since midnight (0-1439). */
+export function getWibMinuteOfDay(d: Date | string): number {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  const wib = new Date(date.getTime() + TZ_OFFSET * 60_000);
+  return wib.getUTCHours() * 60 + wib.getUTCMinutes();
+}
 export const GRACE_HOUR = 3; // 03:00 AM WIB
 
 export function getEditableJournalDates(now: Date = new Date()): string[] {
@@ -45,12 +52,13 @@ export function computeCheckinScore(checkin?: CheckinScoreData | null): number {
     typeof checkin.checked_in_at === 'string'
       ? new Date(checkin.checked_in_at)
       : checkin.checked_in_at;
-  const h = getWibHour(at);
+  const m = getWibMinuteOfDay(at);
   const type = checkin.type === 'morning' ? 'morning' : 'school';
-  const deadline = type === 'morning' ? 6 : 7;
+  // 06:01 on wake-up days, 07:01 on school days: 00:00-06:00 keeps 30.
+  const deadline = 60 * (type === 'morning' ? 6 : 7) + 1;
 
-  if (h < deadline) return 30;
-  const lateHours = h - deadline + 1;
+  if (m < deadline) return 30;
+  const lateHours = Math.floor((m - deadline) / 60) + 1;
   return Math.max(0, 30 - lateHours);
 }
 

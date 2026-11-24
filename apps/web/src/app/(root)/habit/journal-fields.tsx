@@ -440,8 +440,8 @@ export function JournalFields({
         index={1}
         info={
           isWakeDay(selected)
-            ? 'Bangun Pagi bernilai maksimal 30 poin (sebelum 06:00). Berkurang 1 poin tiap jam keterlambatan (06:00-07:00 bernilai 29 poin, 07:00-08:00 bernilai 28 poin, dan seterusnya).'
-            : 'Kehadiran bernilai maksimal 30 poin (sebelum 07:00). Berkurang 1 poin tiap jam keterlambatan (07:00-08:00 bernilai 29 poin, 08:00-09:00 bernilai 28 poin, dan seterusnya).'
+            ? 'Bangun Pagi bernilai maksimal 30 poin (00:00-06:00). Berkurang 1 poin tiap jam keterlambatan (06:01-07:00 bernilai 29 poin, 07:01-08:00 bernilai 28 poin, dan seterusnya).'
+            : 'Kehadiran bernilai maksimal 30 poin (00:00-07:00). Berkurang 1 poin tiap jam keterlambatan (07:01-08:00 bernilai 29 poin, 08:01-09:00 bernilai 28 poin, dan seterusnya).'
         }
         done={status.hadir}
         reduce={reduce}

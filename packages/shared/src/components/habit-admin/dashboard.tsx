@@ -304,7 +304,7 @@ export default function AdminDashboard() {
                 value={`${klass.late}`}
                 hint="absen lewat batas bulan ini"
                 tone="sky"
-                info="Total kejadian absen lewat batas bulan ini. Batasnya 07:00 pada hari sekolah, dan 06:00 untuk Bangun Pagi di Sabtu dan Minggu."
+                info="Total kejadian absen lewat batas bulan ini. Batasnya 07:01 pada hari sekolah, dan 06:01 untuk Bangun Pagi di Sabtu dan Minggu."
               />
               <Stat
                 icon={TrendingUpIcon}
@@ -400,7 +400,7 @@ export default function AdminDashboard() {
                     Daftar anggota{' '}
                     <InfoHint
                       label="Daftar anggota"
-                      text="Kolom Ibadah sampai Belajar adalah persen hari modul itu selesai bulan ini. Hadir memakai batas 07:00 pada hari sekolah dan 06:00 untuk Bangun Pagi di Sabtu dan Minggu."
+                      text="Kolom Ibadah sampai Belajar adalah persen hari modul itu selesai bulan ini. Hadir memakai 07:01 pada hari sekolah dan 06:01 untuk Bangun Pagi di Sabtu dan Minggu."
                     />
                   </CardTitle>
                   <CardDescription>

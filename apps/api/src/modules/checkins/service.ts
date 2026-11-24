@@ -4,13 +4,13 @@ import { and, asc, between, eq, inArray, sql } from 'drizzle-orm';
 
 const DAY_MS = 86_400_000;
 
-/** Late if check-in hour in WIB is at/after this, per type. */
-const LATE_HOURS: Record<'school' | 'morning', number> = {
-  school: 7,
-  morning: 6,
+/** Late if check-in minute in WIB is at/after this, per type: 07:01 / 06:01. */
+const LATE_MINUTES: Record<'school' | 'morning', number> = {
+  school: 7 * 60 + 1,
+  morning: 6 * 60 + 1,
 };
 const isLate = (at: Date | null, type: 'school' | 'morning') =>
-  !!at && wibHour(at) >= LATE_HOURS[type];
+  !!at && wibHour(at) * 60 + at.getUTCMinutes() >= LATE_MINUTES[type];
 
 /** `YYYY-MM` -> inclusive `{ first, last }` bounds of that month. */
 const monthBounds = (month: string) => {

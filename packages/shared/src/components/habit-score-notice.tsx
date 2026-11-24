@@ -258,7 +258,7 @@ export function HabitScoreModal({
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-baseline justify-between rounded-lg bg-card/60 px-2.5 py-1.5 border border-border/50">
                     <span className="text-muted-foreground">
-                      Hari Sekolah (&lt; 07:00)
+                      Hari Sekolah (&lt; 07:01)
                     </span>
                     <span className="font-extrabold text-sky-600 dark:text-sky-400">
                       30 poin
@@ -266,13 +266,13 @@ export function HabitScoreModal({
                   </div>
                   <div className="flex items-baseline justify-between rounded-lg bg-card/60 px-2.5 py-1.5 border border-border/50">
                     <span className="text-muted-foreground">
-                      07:00–07:59 WIB
+                      07:01–08:00 WIB
                     </span>
                     <span className="font-bold text-foreground">29 poin</span>
                   </div>
                   <div className="flex items-baseline justify-between rounded-lg bg-card/60 px-2.5 py-1.5 border border-border/50">
                     <span className="text-muted-foreground">
-                      Libur/Weekend (&lt; 06:00)
+                      Libur/Weekend (&lt; 06:01)
                     </span>
                     <span className="font-extrabold text-sky-600 dark:text-sky-400">
                       30 poin

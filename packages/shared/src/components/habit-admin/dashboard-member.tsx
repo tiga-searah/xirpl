@@ -289,7 +289,7 @@ export function MemberDetail({
           value={`${row.late}`}
           hint="absen lewat batas"
           tone="sky"
-          info="Berapa kali anggota ini absen lewat batas bulan ini. Batasnya 07:00 pada hari sekolah, dan 06:00 untuk Bangun Pagi di Sabtu dan Minggu — kesiangan, kesorean setelah 15:00, kemalaman setelah 18:00. Tetap tercatat hadir."
+          info="Berapa kali anggota ini absen lewat batas bulan ini. Batasnya 07:01 pada hari sekolah, dan 06:01 untuk Bangun Pagi di Sabtu dan Minggu — kesiangan, kesorean setelah 15:00, kemalaman setelah 18:00. Tetap tercatat hadir."
         />
         <Stat
           icon={ShieldAlertIcon}
@@ -489,8 +489,8 @@ export function DayDetail({
         tone="text-sky-500"
         info={
           copy.title === 'Bangun Pagi'
-            ? 'Sabtu dan Minggu modul ini jadi Bangun Pagi dengan batas 06:00. Lewat jam itu tetap tercatat, tapi berstatus kesiangan, kesorean setelah 15:00, kemalaman setelah 18:00, dan semuanya memutus streak.'
-            : 'Absensi dibuka 06:00. Lewat 07:00 tetap tercatat hadir tapi berstatus terlambat, dan streak anggota putus.'
+            ? 'Sabtu dan Minggu modul ini jadi Bangun Pagi dengan batas 06:01. Lewat jam itu tetap tercatat, tapi berstatus kesiangan, kesorean setelah 15:00, kemalaman setelah 18:00, dan semuanya memutus streak.'
+            : 'Absensi dibuka 06:00. Lewat 07:01 tetap tercatat hadir tapi berstatus terlambat, dan streak anggota putus.'
         }
       >
         {checkedAt ? (

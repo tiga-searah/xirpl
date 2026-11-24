@@ -85,8 +85,9 @@ export const SPORT_TYPES = [
 
 export const OPEN_HOUR = 6;
 export const LATE_HOUR = 7;
+export const LATE_MINUTE = 1; // school and wake-up deadlines land at :01
 
-/** Weekend: the attendance module becomes wake-up, deadline 06:00. */
+/** Weekend: the attendance module becomes wake-up, deadline 06:01. */
 export const WAKE_HOUR = 6;
 
 /** Wake-up after this hour is recorded as afternoon, then as night. */
@@ -109,10 +110,16 @@ export const LATE_HOURS: Record<CheckinType, number> = {
 export const checkinAt = (c: Check | null) =>
   c?.checked_in_at ? new Date(c.checked_in_at) : null;
 
-// Check-in past its type's hour limit — the basis of the late label.
+// Check-in past its type's hour + `LATE_MINUTE` — the basis of the late label.
 export function isLateCheck(c: Check | null) {
   const at = checkinAt(c);
-  return !!at && !!c && at.getHours() >= LATE_HOURS[c.type ?? checkinType(at)];
+  return (
+    !!at &&
+    !!c &&
+    (at.getHours() > LATE_HOURS[c.type ?? checkinType(at)] ||
+      (at.getHours() === LATE_HOURS[c.type ?? checkinType(at)] &&
+        at.getMinutes() >= LATE_MINUTE))
+  );
 }
 
 /**
@@ -131,12 +138,15 @@ export const streakForCheckStatus = (
   const isPastWeekend = (date: string) => {
     const day = toLocalDate(date);
     return (
-      isWeekend(day) && (date < todayDate || today.getHours() >= WAKE_HOUR)
+      isWeekend(day) &&
+      (date < todayDate ||
+        today.getHours() * 60 + today.getMinutes() >=
+          WAKE_HOUR * 60 + LATE_MINUTE)
     );
   };
 
   // Late on any day, or a weekend without Wake-Up, breaks the streak.
-  // Today only counts as failed once it's past 06:00.
+  // Today only counts as failed once it's past the wake-up deadline.
   const lastBreak = checks
     .filter((check) => check.date <= todayDate)
     .filter(
@@ -172,16 +182,15 @@ export const streakForCheckStatus = (
 export type AttendanceWindow = 'closed' | 'open' | 'late';
 
 // Current attendance window status, used to lock the button.
+// Weekend opens at 00:00 and stays open; school opens 06:00, late from 07:01.
 export const attendanceWindow = (d: Date): AttendanceWindow =>
   isWeekend(d)
-    ? d.getHours() < WAKE_HOUR
-      ? 'open'
-      : 'late'
+    ? 'open'
     : d.getHours() < OPEN_HOUR
       ? 'closed'
-      : d.getHours() < LATE_HOUR
-        ? 'open'
-        : 'late';
+      : d.getHours() > LATE_HOUR || d.getMinutes() >= LATE_MINUTE
+        ? 'late'
+        : 'open';
 
 /**
  * Label for a record past its deadline, computed from the check-in time.
@@ -206,7 +215,7 @@ export function attendanceCopy(d: Date) {
     doneAction: w ? 'Sudah Dicatat' : 'Sudah Absen',
     ok: w ? 'Bangun Pagi' : 'Hadir',
     late: w ? 'Kesiangan' : 'Terlambat',
-    deadline: w ? '06:00' : '07:00',
+    deadline: w ? '06:01' : '07:01',
     verb: w ? 'Catat bangun pagi' : 'Absen',
   };
 }

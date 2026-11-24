@@ -49,6 +49,7 @@ export default function PageHero(props: {
             alt="Nailong"
             width={112}
             height={112}
+            loading="eager"
             unoptimized
             className="h-auto w-full drop-shadow-[0_6px_12px_rgba(10,37,64,0.2)]"
           />
@@ -78,6 +79,7 @@ export default function PageHero(props: {
                 alt="Nailong"
                 width={96}
                 height={96}
+                loading="eager"
                 unoptimized
                 className="pointer-events-none hidden h-auto w-20 shrink-0 sm:block sm:w-24 drop-shadow-[0_6px_12px_rgba(10,37,64,0.2)]"
               />

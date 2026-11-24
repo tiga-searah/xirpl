@@ -356,6 +356,7 @@ export default function LeaderboardBoard() {
               alt="Nailong"
               width={104}
               height={104}
+              loading="eager"
               unoptimized
               className="pointer-events-none absolute -top-2 right-0 hidden h-auto w-24 sm:block drop-shadow-[0_6px_12px_rgba(10,37,64,0.2)]"
             />

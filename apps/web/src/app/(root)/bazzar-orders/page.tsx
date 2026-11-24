@@ -1110,7 +1110,7 @@ export default function BazzarOrdersPage() {
           className="duo-card scroll-mt-20 rounded-3xl border-2 bg-card p-5 sm:p-6"
         >
           <div className="mb-5 flex items-center gap-3">
-            <span className="border-brand-blue/40 bg-pastel-blue text-brand-navy grid size-10 shrink-0 place-items-center rounded-2xl border-2">
+            <span className="border-brand-blue/40 bg-pastel-blue text-brand-navy dark:text-accent-foreground grid size-10 shrink-0 place-items-center rounded-2xl border-2">
               <ChefHat className="size-5" />
             </span>
             <div>
@@ -1598,7 +1598,7 @@ export default function BazzarOrdersPage() {
                   value: orders.length,
                   note: `${doneCount} selesai`,
                   Icon: Users,
-                  tone: 'border-brand-blue/40 bg-pastel-blue/70 text-brand-navy',
+                  tone: 'border-brand-blue/40 bg-pastel-blue/70 text-brand-navy dark:text-accent-foreground',
                 },
                 {
                   label: 'Pangsit Sitt',

@@ -176,6 +176,7 @@ export default function Banner() {
                       alt="Nailong"
                       width={130}
                       height={130}
+                      loading="eager"
                       unoptimized
                       className="h-auto w-full drop-shadow-[0_6px_12px_rgba(10,37,64,0.28)]"
                     />
@@ -250,6 +251,7 @@ export default function Banner() {
             alt="Nailong"
             width={150}
             height={150}
+            loading="eager"
             unoptimized
             className="h-auto w-full drop-shadow-[0_10px_18px_rgba(10,37,64,0.25)]"
           />

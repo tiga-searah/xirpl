@@ -96,8 +96,10 @@ export default function AppSidebar() {
 
   const contentRef = useRef<HTMLDivElement>(null);
   const [isYellow, setIsYellow] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setIsYellow(getDayTheme() === 'yellow');
   }, []);
 
@@ -160,7 +162,7 @@ export default function AppSidebar() {
                     <SidebarMenuItem key={w.name} className="relative">
                       {isActive && (
                         <m.span
-                          layoutId="sidebar-active-pill"
+                          layoutId={mounted ? 'sidebar-active-pill' : undefined}
                           transition={{
                             type: 'spring',
                             stiffness: 420,
@@ -214,7 +216,7 @@ export default function AppSidebar() {
                 <SidebarMenuItem className="relative">
                   {path === '/bazzar-orders' && (
                     <m.span
-                      layoutId="sidebar-active-pill"
+                      layoutId={mounted ? 'sidebar-active-pill' : undefined}
                       transition={{
                         type: 'spring',
                         stiffness: 420,

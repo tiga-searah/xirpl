@@ -1089,7 +1089,7 @@ export default function BazzarOrdersPage() {
         >
           <LockIcon className="size-4 shrink-0" />
           <span>
-            Halaman bazzar sedang dikunci (hanya lihat). Pesanan tidak dapat
+            Halaman bazzar telah dikunci (hanya lihat). Pesanan tidak dapat
             ditambah, diubah, atau dihapus.
           </span>
         </div>

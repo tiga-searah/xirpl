@@ -5,7 +5,6 @@ import { DayThemeSync } from '@fe/components/day-theme-sync';
 import NavBar from '@fe/components/layout/navbar';
 import AppSidebar from '@fe/components/layout/sidebar';
 import { SidebarProvider } from '@fe/components/ui/sidebar';
-import { UserProvider } from '@fe/hooks/use-user';
 import { DAY_THEME_INIT_SCRIPT } from '@fe/lib/day-theme';
 import { SITE_NAME } from '@xirpl/shared';
 import { ThemeProvider } from '@xirpl/shared/components/theme-provider';
@@ -48,15 +47,13 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <DayThemeSync />
           <TooltipProvider>
-            <UserProvider>
-              <SidebarProvider defaultOpen={defaultOpen}>
-                <AppSidebar />
-                <main className="min-h-svh min-w-0 flex-1">
-                  <NavBar />
-                  {children}
-                </main>
-              </SidebarProvider>
-            </UserProvider>
+            <SidebarProvider defaultOpen={defaultOpen}>
+              <AppSidebar />
+              <main className="min-h-svh min-w-0 flex-1">
+                <NavBar />
+                {children}
+              </main>
+            </SidebarProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

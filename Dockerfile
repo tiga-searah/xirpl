@@ -83,4 +83,5 @@ WORKDIR /app
 ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3620
 COPY --from=admin-build /app/apps/admin/.next/standalone .
 COPY --from=admin-build /app/apps/admin/.next/static ./apps/admin/.next/static
+COPY --from=admin-build /app/apps/admin/public ./apps/admin/public
 CMD ["bun", "apps/admin/server.js"]
